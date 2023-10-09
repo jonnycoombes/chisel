@@ -1,3 +1,9 @@
 [workspace]
-members = ["chisel-json"]
+members = ["chisel-json", "chisel-decoders"]
 resolver="2"
+
+[workspace.package]
+version="1.0.7"
+edition="2021"
+authors = ["Jonny Coombes <jcoombes@jcs-software.co.uk>"]
+rust-version="1.56"
