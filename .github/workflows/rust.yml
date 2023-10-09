@@ -2,7 +2,7 @@ name: Chisel-Core CI
 
 on:
   push:
-    branches: [ "dev", "trunk" ]
+    branches: [ "dev", "trunk", "v*" ]
   pull_request:
     branches: [ "trunk" ]
 
