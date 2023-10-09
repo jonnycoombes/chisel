@@ -8,7 +8,7 @@ description = "Simple JSON parser for Rust"
 license = "MIT OR Apache-2.0"
 keywords = ["json", "parser"]
 categories = ["parser-implementations", "text-processing"]
-repository = "https://github.com/jonnycoombes/chisel-core"
+repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-json"
 
 [dependencies]
 fast-float = "0.2.0"
