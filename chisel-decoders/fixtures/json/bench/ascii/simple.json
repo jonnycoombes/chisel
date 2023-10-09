@@ -1,0 +1,9 @@
+{
+  "test": "This is a test string",
+  "some numerics": 1231232322323.56,
+  "array": [
+    {
+      "sub object": "one"
+    }
+  ]
+}

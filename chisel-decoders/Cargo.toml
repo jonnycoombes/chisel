@@ -1,0 +1,27 @@
+[package]
+name = "chisel-decoders"
+version = "1.0.7"
+edition.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Simple UTF-8 and ASCII byte stream decoder"
+license = "MIT OR Apache-2.0"
+keywords = ["ascii", "utf8", "decoder"]
+categories = ["encoding", "text-processing"]
+repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-decoders"
+
+[dependencies]
+
+[dev-dependencies]
+criterion = {version ="0.4.0", features = ["html_reports"]}
+pprof = {version = "0.11.1", features = ["flamegraph", "criterion", "protobuf"]}
+
+[[bench]]
+name = "utf8_decoding"
+harness = false
+
+[[bench]]
+name = "ascii_decoding"
+harness = false
+
+[features]
