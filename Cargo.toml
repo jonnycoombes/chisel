@@ -1,0 +1,3 @@
+[workspace]
+members = ["chisel-json"]
+resolver="2"
