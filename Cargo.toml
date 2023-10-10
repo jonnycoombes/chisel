@@ -7,3 +7,8 @@ version="1.0.7"
 edition="2021"
 authors = ["Jonny Coombes <jcoombes@jcs-software.co.uk>"]
 rust-version="1.56"
+
+[workspace.dependencies]
+bytesize = "1.2.0"
+criterion = {version = "0.5.1"}
+pprof = {version = "0.13.0"}

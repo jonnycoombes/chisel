@@ -13,8 +13,8 @@ repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-deco
 [dependencies]
 
 [dev-dependencies]
-criterion = {version ="0.4.0", features = ["html_reports"]}
-pprof = {version = "0.11.1", features = ["flamegraph", "criterion", "protobuf"]}
+criterion = { workspace = true, features = ["html_reports"] }
+pprof = { workspace = true, features = ["flamegraph", "criterion", "protobuf"] }
 
 [[bench]]
 name = "utf8_decoding"
