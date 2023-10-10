@@ -5,12 +5,12 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 use crate::coords::Coords;
-use crate::lexer::decoders::{DecoderSelector, Encoding};
 use crate::lexer::lexer_core::{Lexer, Token};
 use crate::parsers::sax_events::{Event, Match};
 use crate::pointers::pointer::JsonPointer;
 use crate::results::{ParserError, ParserErrorDetails, ParserErrorSource, ParserResult};
 use crate::sax_parser_error;
+use chisel_decoders::selector::{DecoderSelector, Encoding};
 
 macro_rules! emit_event {
     ($cb : expr, $m : expr, $span : expr, $path : expr) => {

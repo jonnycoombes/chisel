@@ -7,11 +7,11 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::Path;
 
-use crate::lexer::decoders::{DecoderSelector, Encoding};
 use crate::lexer::lexer_core::{Lexer, Token};
 use crate::results::{ParserError, ParserErrorDetails, ParserErrorSource, ParserResult};
 use crate::JsonValue;
 use crate::{dom_parser_error, JsonKeyValue};
+use chisel_decoders::selector::{DecoderSelector, Encoding};
 
 /// Main JSON parser struct
 pub struct Parser {

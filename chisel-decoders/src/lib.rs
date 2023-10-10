@@ -72,4 +72,5 @@
 //!
 pub mod ascii;
 pub mod common;
+pub mod selector;
 pub mod utf8;

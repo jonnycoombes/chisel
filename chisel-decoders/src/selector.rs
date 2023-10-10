@@ -2,11 +2,12 @@
 //! flavour of iterator. By default, this iterator is based on a decoder that will take a stream of
 //! bytes from an underlying source, and convert into a stream of `char`s.
 //!
-//! The [DecoderSelector] implemented within this module is used to instantiate new `char`
-//! iterators, based on different encodings. (Currently only ASCII and UTF-8 are supported).
+//! A [DecoderSelector] can be used to instantiate new `char` iterators, based on different
+//! encodings. (Currently only ASCII and UTF-8 are supported).
+//!
+use crate::ascii::AsciiDecoder;
+use crate::utf8::Utf8Decoder;
 use std::io::BufRead;
-
-use chisel_decoders::{ascii::AsciiDecoder, utf8::Utf8Decoder};
 
 /// Enumeration of different supported encoding types
 #[derive(Copy, Clone)]
@@ -24,7 +25,7 @@ impl Default for Encoding {
 /// A struct that is essentially a factory for creating new instances of [char] iterators,
 /// based on a specified encoding type
 #[derive(Default)]
-pub(crate) struct DecoderSelector {}
+pub struct DecoderSelector {}
 
 impl DecoderSelector {
     /// Create and return an instance of the default byte decoder / char iterator. (Utf-8)
