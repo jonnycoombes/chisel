@@ -116,7 +116,7 @@ mod lib {
     use std::fs::File;
     use std::io::BufReader;
 
-    use crate::{default_decoder, Encoding, new_decoder};
+    use crate::{default_decoder, new_decoder, Encoding};
 
     fn fuzz_file() -> File {
         File::open("fixtures/fuzz.txt").unwrap()

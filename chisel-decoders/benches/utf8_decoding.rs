@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::BufReader;
 
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{criterion_group, criterion_main, Criterion};
 use pprof::criterion::{Output, PProfProfiler};
 
 use chisel_decoders::utf8::Utf8Decoder;

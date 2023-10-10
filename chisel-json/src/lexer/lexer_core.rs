@@ -585,9 +585,9 @@ mod tests {
     use chisel_common::char::span::Span;
     use chisel_decoders::utf8::Utf8Decoder;
 
-    use crate::{lines_from_relative_file, reader_from_bytes};
     use crate::lexer::lexer_core::{Lexer, PackedToken, Token};
     use crate::results::{ParserError, ParserResult};
+    use crate::{lines_from_relative_file, reader_from_bytes};
 
     #[test]
     fn should_parse_basic_tokens() {
