@@ -2,10 +2,12 @@
 //!
 //! This module contains definitions for the main [Result] types used throughout the parser.
 
-use crate::lexer::lexer_core::Token;
-use chisel_common::char::coords::Coords;
 use std::fmt::{Display, Formatter};
 use std::io::BufRead;
+
+use chisel_common::char::coords::Coords;
+
+use crate::lexer::lexer_core::Token;
 
 /// Global result type used throughout the parser stages
 pub type ParserResult<T> = Result<T, ParserError>;

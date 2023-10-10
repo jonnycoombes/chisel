@@ -1,5 +1,6 @@
-use crate::char::coords::Coords;
 use std::fmt::{Display, Formatter};
+
+use crate::char::coords::Coords;
 
 /// A [Span] represents a linear interval within the parser input, between to different [Coords]
 #[derive(Debug, Default, Copy, Clone, PartialEq, PartialOrd)]

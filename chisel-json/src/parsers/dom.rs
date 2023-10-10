@@ -1,17 +1,18 @@
 //! The DOM parser
 //!
 //!
-use chisel_decoders::{default_decoder, new_decoder, Encoding};
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::Path;
 
+use chisel_decoders::{default_decoder, Encoding, new_decoder};
+
+use crate::{dom_parser_error, JsonKeyValue};
+use crate::JsonValue;
 use crate::lexer::lexer_core::{Lexer, Token};
 use crate::results::{ParserError, ParserErrorDetails, ParserErrorSource, ParserResult};
-use crate::JsonValue;
-use crate::{dom_parser_error, JsonKeyValue};
 
 /// Main JSON parser struct
 pub struct Parser {
@@ -146,9 +147,9 @@ impl Parser {
 mod tests {
     #![allow(unused_macros)]
 
+    use std::{env, fs};
     use std::path::PathBuf;
     use std::time::Instant;
-    use std::{env, fs};
 
     use bytesize::ByteSize;
 

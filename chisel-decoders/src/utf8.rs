@@ -5,9 +5,9 @@
 use std::io::BufRead;
 use std::mem::transmute;
 
+use crate::{decoder_error, invalid_byte_sequence};
 use crate::common::*;
 use crate::utf8::SequenceType::Unrecognised;
-use crate::{decoder_error, invalid_byte_sequence};
 
 enum SequenceType {
     Single,

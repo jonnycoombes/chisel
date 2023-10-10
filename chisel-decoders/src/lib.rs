@@ -70,9 +70,10 @@
 //!     }
 //! ```
 //!
+use std::io::BufRead;
+
 use crate::ascii::AsciiDecoder;
 use crate::utf8::Utf8Decoder;
-use std::io::BufRead;
 
 pub mod ascii;
 pub mod common;
@@ -112,10 +113,10 @@ pub fn new_decoder<'a, Buffer: BufRead>(
 
 #[cfg(test)]
 mod lib {
-
-    use crate::{default_decoder, new_decoder, Encoding};
     use std::fs::File;
     use std::io::BufReader;
+
+    use crate::{default_decoder, Encoding, new_decoder};
 
     fn fuzz_file() -> File {
         File::open("fixtures/fuzz.txt").unwrap()

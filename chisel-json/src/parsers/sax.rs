@@ -5,7 +5,7 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 use chisel_common::char::coords::Coords;
-use chisel_decoders::{default_decoder, new_decoder, Encoding};
+use chisel_decoders::{default_decoder, Encoding, new_decoder};
 use chisel_json_pointer::JsonPointer;
 
 use crate::lexer::lexer_core::{Lexer, Token};
@@ -264,10 +264,10 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
+    use std::{env, fs};
     use std::io::BufReader;
     use std::path::PathBuf;
     use std::time::Instant;
-    use std::{env, fs};
 
     use bytesize::ByteSize;
 
