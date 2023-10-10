@@ -4,10 +4,10 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
+use chisel_common::char::coords::Coords;
 use chisel_decoders::{default_decoder, new_decoder, Encoding};
 use chisel_json_pointer::JsonPointer;
 
-use crate::coords::Coords;
 use crate::lexer::lexer_core::{Lexer, Token};
 use crate::parsers::sax_events::{Event, Match};
 use crate::results::{ParserError, ParserErrorDetails, ParserErrorSource, ParserResult};

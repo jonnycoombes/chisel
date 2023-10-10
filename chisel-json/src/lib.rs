@@ -19,7 +19,6 @@ extern crate core;
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-pub mod coords;
 pub mod lexer;
 pub mod parsers;
 pub mod results;

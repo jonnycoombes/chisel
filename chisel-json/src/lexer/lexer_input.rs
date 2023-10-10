@@ -1,6 +1,7 @@
-use crate::coords::{Coords, Span};
 use crate::lexer_input_error;
 use crate::results::{ParserError, ParserErrorDetails, ParserErrorSource, ParserResult};
+use chisel_common::char::coords::Coords;
+use chisel_common::char::span::Span;
 
 /// Aggregate structure consisting of a character and it's position within the input stream
 pub struct CharWithCoords {

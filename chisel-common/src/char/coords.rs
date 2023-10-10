@@ -1,6 +1,3 @@
-//! Coordinate structure used to reference specific locations within parser input
-#![allow(clippy::len_without_is_empty)]
-
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 
@@ -51,22 +48,5 @@ impl PartialOrd<Self> for Coords {
 impl Ord for Coords {
     fn cmp(&self, other: &Self) -> Ordering {
         self.absolute.cmp(&other.absolute)
-    }
-}
-
-/// A [Span] represents a linear interval within the parser input, between to different [Coords]
-#[derive(Debug, Default, Copy, Clone, PartialEq, PartialOrd)]
-pub struct Span {
-    /// Start [Coords] for the span
-    pub start: Coords,
-    /// End [Coords] for the span
-    pub end: Coords,
-}
-
-impl Span {}
-
-impl Display for Span {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "start: {}, end: {}", self.start, self.end,)
     }
 }

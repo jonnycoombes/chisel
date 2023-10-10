@@ -13,6 +13,7 @@ repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-json
 [dependencies]
 fast-float = "0.2.0"
 lexical={version = "6.1.1", features = ["parse-floats", "parse-integers"], optional = true}
+chisel-common = {path = "../chisel-common"}
 chisel-decoders = {path = "../chisel-decoders"}
 chisel-json-pointer = {path = "../chisel-json-pointer"}
 

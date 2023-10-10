@@ -4,7 +4,8 @@
 #![allow(unused_variables)]
 #![allow(unreachable_code)]
 
-use crate::coords::{Coords, Span};
+use chisel_common::char::coords::Coords;
+use chisel_common::char::span::Span;
 use std::fmt::{Display, Formatter};
 use std::io::BufRead;
 
@@ -575,6 +576,7 @@ impl<'a> Lexer<'a> {
 
 #[cfg(test)]
 mod tests {
+    use chisel_common::char::span::Span;
     use std::env;
     use std::fs::File;
     use std::io::{BufRead, BufReader};
@@ -582,7 +584,6 @@ mod tests {
 
     use chisel_decoders::utf8::Utf8Decoder;
 
-    use crate::coords::Span;
     use crate::lexer::lexer_core::{Lexer, PackedToken, Token};
     use crate::results::{ParserError, ParserResult};
     use crate::{lines_from_relative_file, reader_from_bytes};
