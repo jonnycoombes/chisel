@@ -1,4 +1,4 @@
-use chisel_decoders::selector::Encoding;
+use chisel_decoders::Encoding;
 use chisel_json::{parsers::sax::Parser, parsers::sax_events::Match};
 
 /// Macro to tidy up the match arm

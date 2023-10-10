@@ -1,6 +1,7 @@
 //! The DOM parser
 //!
 //!
+use chisel_decoders::{default_decoder, new_decoder, Encoding};
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::fs::File;
@@ -11,11 +12,9 @@ use crate::lexer::lexer_core::{Lexer, Token};
 use crate::results::{ParserError, ParserErrorDetails, ParserErrorSource, ParserResult};
 use crate::JsonValue;
 use crate::{dom_parser_error, JsonKeyValue};
-use chisel_decoders::selector::{DecoderSelector, Encoding};
 
 /// Main JSON parser struct
 pub struct Parser {
-    decoders: DecoderSelector,
     encoding: Encoding,
 }
 
@@ -23,7 +22,6 @@ impl Default for Parser {
     /// The default encoding is Utf-8
     fn default() -> Self {
         Self {
-            decoders: Default::default(),
             encoding: Default::default(),
         }
     }
@@ -32,10 +30,7 @@ impl Default for Parser {
 impl Parser {
     /// Create a new instance of the parser using a specific [Encoding]
     pub fn with_encoding(encoding: Encoding) -> Self {
-        Self {
-            decoders: Default::default(),
-            encoding,
-        }
+        Self { encoding }
     }
 
     ///
@@ -43,7 +38,7 @@ impl Parser {
         match File::open(&path) {
             Ok(f) => {
                 let mut reader = BufReader::new(f);
-                let mut chars = self.decoders.new_decoder(&mut reader, self.encoding);
+                let mut chars = new_decoder(&mut reader, self.encoding);
                 self.parse(&mut chars)
             }
             Err(_) => {
@@ -54,19 +49,19 @@ impl Parser {
 
     pub fn parse_bytes(&self, bytes: &[u8]) -> ParserResult<JsonValue> {
         let mut reader = BufReader::new(bytes);
-        let mut chars = self.decoders.default_decoder(&mut reader);
+        let mut chars = default_decoder(&mut reader);
         self.parse(&mut chars)
     }
 
     pub fn parse_str(&self, str: &str) -> ParserResult<JsonValue> {
         let mut reader = BufReader::new(str.as_bytes());
-        let mut chars = self.decoders.default_decoder(&mut reader);
+        let mut chars = default_decoder(&mut reader);
         self.parse(&mut chars)
     }
 
     /// Parse the contents of a buffer (e.g. implementation of [BufRead])
     pub fn parse_buffer(&self, buffer: &mut impl BufRead) -> ParserResult<JsonValue> {
-        let mut chars = self.decoders.default_decoder(buffer);
+        let mut chars = default_decoder(buffer);
         self.parse(&mut chars)
     }
 

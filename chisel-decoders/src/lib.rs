@@ -70,7 +70,75 @@
 //!     }
 //! ```
 //!
+use crate::ascii::AsciiDecoder;
+use crate::utf8::Utf8Decoder;
+use std::io::BufRead;
+
 pub mod ascii;
 pub mod common;
-pub mod selector;
 pub mod utf8;
+
+/// Enumeration of different supported encoding types
+#[derive(Copy, Clone)]
+pub enum Encoding {
+    Utf8,
+    Ascii,
+}
+
+/// Default encoding is UTF-8
+impl Default for Encoding {
+    fn default() -> Self {
+        Self::Utf8
+    }
+}
+
+/// Helper function for constructing a default decoder, wrapped around an input buffer
+pub fn default_decoder<'a, Buffer: BufRead>(
+    buffer: &'a mut Buffer,
+) -> Box<dyn Iterator<Item = char> + 'a> {
+    Box::new(Utf8Decoder::new(buffer))
+}
+
+/// Helper function for constructing a specific decoder, wrapped around an input buffer
+pub fn new_decoder<'a, Buffer: BufRead>(
+    buffer: &'a mut Buffer,
+    encoding: Encoding,
+) -> Box<dyn Iterator<Item = char> + 'a> {
+    match encoding {
+        Encoding::Ascii => Box::new(AsciiDecoder::new(buffer)),
+        Encoding::Utf8 => Box::new(Utf8Decoder::new(buffer)),
+    }
+}
+
+#[cfg(test)]
+mod lib {
+
+    use crate::{default_decoder, new_decoder, Encoding};
+    use std::fs::File;
+    use std::io::BufReader;
+
+    fn fuzz_file() -> File {
+        File::open("fixtures/fuzz.txt").unwrap()
+    }
+
+    #[test]
+    fn should_create_a_default_decoder() {
+        let mut reader = BufReader::new(fuzz_file());
+        let decoder = default_decoder(&mut reader);
+        assert!(decoder.count() > 0)
+    }
+
+    #[test]
+    fn should_create_a_new_ascii_decoder() {
+        let mut reader = BufReader::new(fuzz_file());
+        let decoder = new_decoder(&mut reader, Encoding::Ascii);
+        assert!(decoder.count() > 0)
+    }
+
+    #[test]
+    fn should_create_a_new_utf8_decoder() {
+        let mut reader = BufReader::new(fuzz_file());
+        let decoder = new_decoder(&mut reader, Encoding::Utf8);
+        assert!(decoder.count() > 0)
+    }
+}

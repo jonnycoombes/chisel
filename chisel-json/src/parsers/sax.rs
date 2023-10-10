@@ -1,4 +1,5 @@
 //! The SAX parser
+use chisel_decoders::{default_decoder, new_decoder, Encoding};
 use std::borrow::Cow;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -10,7 +11,6 @@ use crate::parsers::sax_events::{Event, Match};
 use crate::pointers::pointer::JsonPointer;
 use crate::results::{ParserError, ParserErrorDetails, ParserErrorSource, ParserResult};
 use crate::sax_parser_error;
-use chisel_decoders::selector::{DecoderSelector, Encoding};
 
 macro_rules! emit_event {
     ($cb : expr, $m : expr, $span : expr, $path : expr) => {
@@ -31,7 +31,6 @@ macro_rules! emit_event {
 
 /// Main JSON parser struct
 pub struct Parser {
-    decoders: DecoderSelector,
     encoding: Encoding,
 }
 
@@ -39,7 +38,6 @@ impl Default for Parser {
     /// The default encoding is Utf-8
     fn default() -> Self {
         Self {
-            decoders: Default::default(),
             encoding: Default::default(),
         }
     }
@@ -48,10 +46,7 @@ impl Default for Parser {
 impl Parser {
     /// Create a new instance of the parser using a specific [Encoding]
     pub fn with_encoding(encoding: Encoding) -> Self {
-        Self {
-            decoders: Default::default(),
-            encoding,
-        }
+        Self { encoding }
     }
 
     pub fn parse_file<PathLike: AsRef<Path>, Callback>(
@@ -65,7 +60,7 @@ impl Parser {
         match File::open(&path) {
             Ok(f) => {
                 let mut reader = BufReader::new(f);
-                let mut chars = self.decoders.new_decoder(&mut reader, self.encoding);
+                let mut chars = new_decoder(&mut reader, self.encoding);
                 self.parse(&mut chars, cb)
             }
             Err(_) => {
@@ -82,7 +77,7 @@ impl Parser {
             return sax_parser_error!(ParserErrorDetails::ZeroLengthInput, Coords::default());
         }
         let mut reader = BufReader::new(bytes);
-        let mut chars = self.decoders.default_decoder(&mut reader);
+        let mut chars = default_decoder(&mut reader);
         self.parse(&mut chars, cb)
     }
 
@@ -94,7 +89,7 @@ impl Parser {
             return sax_parser_error!(ParserErrorDetails::ZeroLengthInput, Coords::default());
         }
         let mut reader = BufReader::new(str.as_bytes());
-        let mut chars = self.decoders.default_decoder(&mut reader);
+        let mut chars = default_decoder(&mut reader);
         self.parse(&mut chars, cb)
     }
 
@@ -107,7 +102,7 @@ impl Parser {
     where
         Callback: FnMut(&Event) -> ParserResult<()>,
     {
-        let mut chars = self.decoders.default_decoder(buffer);
+        let mut chars = default_decoder(buffer);
         self.parse(&mut chars, cb)
     }
 
