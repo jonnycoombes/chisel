@@ -1,10 +1,10 @@
 [package]
 name = "chisel-json"
-version = "1.0.7"
+version.workspace = true
 authors.workspace = true
 edition.workspace = true 
 rust-version.workspace = true
-description = "Simple JSON parser for Rust"
+description = "Chisel DOM and SAX JSON parsers"
 license = "MIT OR Apache-2.0"
 keywords = ["json", "parser"]
 categories = ["parser-implementations", "text-processing"]
@@ -14,6 +14,7 @@ repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-json
 fast-float = "0.2.0"
 lexical={version = "6.1.1", features = ["parse-floats", "parse-integers"], optional = true}
 chisel-decoders = {path = "../chisel-decoders"}
+chisel-json-pointer = {path = "../chisel-json-pointer"}
 
 [dev-dependencies]
 bytesize = "1.2.0"

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 //! A representation of a JSON Pointer with associated operations, as per RFC 6901
 //!
 //!

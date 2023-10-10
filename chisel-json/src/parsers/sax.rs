@@ -1,14 +1,15 @@
 //! The SAX parser
-use chisel_decoders::{default_decoder, new_decoder, Encoding};
 use std::borrow::Cow;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
+use chisel_decoders::{default_decoder, new_decoder, Encoding};
+use chisel_json_pointer::JsonPointer;
+
 use crate::coords::Coords;
 use crate::lexer::lexer_core::{Lexer, Token};
 use crate::parsers::sax_events::{Event, Match};
-use crate::pointers::pointer::JsonPointer;
 use crate::results::{ParserError, ParserErrorDetails, ParserErrorSource, ParserResult};
 use crate::sax_parser_error;
 

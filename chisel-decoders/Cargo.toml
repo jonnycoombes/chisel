@@ -1,10 +1,10 @@
 [package]
 name = "chisel-decoders"
-version = "1.0.7"
+version.workspace = true
 authors.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description = "Simple UTF-8 and ASCII byte stream decoder"
+description = "Chisel UTF-8 and ASCII byte stream decoder implementations"
 license = "MIT OR Apache-2.0"
 keywords = ["ascii", "utf8", "decoder"]
 categories = ["encoding", "text-processing"]

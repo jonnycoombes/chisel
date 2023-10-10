@@ -1,5 +1,5 @@
 [workspace]
-members = ["chisel-json", "chisel-decoders"]
+members = ["chisel-json","chisel-json-pointer", "chisel-decoders"]
 resolver="2"
 
 [workspace.package]

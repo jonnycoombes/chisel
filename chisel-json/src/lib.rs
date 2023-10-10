@@ -22,11 +22,8 @@ use std::collections::HashMap;
 pub mod coords;
 pub mod lexer;
 pub mod parsers;
-pub mod pointers;
-#[cfg(test)]
-mod test_macros;
-
 pub mod results;
+mod test_macros;
 
 /// Structure representing a JSON key value pair
 #[derive(Debug)]
