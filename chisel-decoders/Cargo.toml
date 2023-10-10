@@ -1,6 +1,6 @@
 [package]
 name = "chisel-decoders"
-version.workspace = true
+version = "1.0.8"
 authors.workspace = true
 edition.workspace = true
 rust-version.workspace = true
