@@ -1,11 +1,7 @@
-use std::fs::File;
-use std::io::BufReader;
-
-use criterion::{criterion_group, criterion_main, Criterion};
-use pprof::criterion::{Output, PProfProfiler};
-
 use chisel_decoders::utf8::Utf8Decoder;
 use chisel_json::lexer::lexer_core::{Lexer, Token};
+use criterion::{Criterion, criterion_group, criterion_main};
+use pprof::criterion::{Output, PProfProfiler};
 
 macro_rules! build_lex_benchmark {
     ($func : tt, $filename : expr) => {

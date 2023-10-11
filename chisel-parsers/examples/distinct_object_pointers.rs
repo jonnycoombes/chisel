@@ -1,5 +1,6 @@
 use chisel_decoders::Encoding;
-use chisel_json::{parsers::sax::Parser, parsers::sax_events::Match};
+use chisel_parsers::json::events::Match;
+use chisel_parsers::json::sax::Parser;
 
 /// Macro to tidy up the match arm
 macro_rules! selected_event {

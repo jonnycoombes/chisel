@@ -1,7 +1,6 @@
 [workspace]
 members = [
-	"chisel-json",
-	"chisel-json-pointer", 
+	"chisel-json-pointer",
 	"chisel-decoders",
 	"chisel-common",
 	"chisel-lexers",

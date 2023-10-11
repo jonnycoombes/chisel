@@ -13,8 +13,8 @@ repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-pars
 [dependencies]
 chisel-common = {path = "../chisel-common"}
 chisel-decoders = {path = "../chisel-decoders"}
-chisel-lexers = {path = "../chisel-lexers"}
 chisel-json-pointer = {path = "../chisel-json-pointer"}
+chisel-lexers = {path = "../chisel-lexers"}
 
 [dev-dependencies]
 bytesize = {workspace = true}

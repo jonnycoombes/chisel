@@ -1,9 +1,6 @@
-use std::path::PathBuf;
-
-use criterion::{criterion_group, criterion_main, Criterion};
-use pprof::criterion::{Output, PProfProfiler};
-
 use chisel_json::parsers::dom::Parser;
+use criterion::{Criterion, criterion_group, criterion_main};
+use pprof::criterion::{Output, PProfProfiler};
 
 macro_rules! build_parse_benchmark {
     ($func : tt, $filename : expr) => {

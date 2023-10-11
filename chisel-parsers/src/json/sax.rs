@@ -5,13 +5,15 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 use chisel_common::char::coords::Coords;
-use chisel_decoders::{default_decoder, new_decoder, Encoding};
+use chisel_decoders::{default_decoder, Encoding, new_decoder};
 use chisel_json_pointer::JsonPointer;
+use chisel_lexers::json::lexer::Lexer;
+use chisel_lexers::json::tokens::Token;
 
-use crate::lexer::lexer_core::{Lexer, Token};
-use crate::parsers::sax_events::{Event, Match};
-use crate::results::{ParserError, ParserErrorDetails, ParserErrorSource, ParserResult};
-use crate::sax_parser_error;
+use crate::json::{ParserError, ParserErrorDetails};
+use crate::json::events::{Event, Match};
+use crate::json::ParserResult;
+use crate::parser_error;
 
 macro_rules! emit_event {
     ($cb : expr, $m : expr, $span : expr, $path : expr) => {
@@ -65,7 +67,7 @@ impl Parser {
                 self.parse(&mut chars, cb)
             }
             Err(_) => {
-                sax_parser_error!(ParserErrorDetails::InvalidFile)
+                parser_error!(ParserErrorDetails::InvalidFile)
             }
         }
     }
@@ -75,7 +77,7 @@ impl Parser {
         Callback: FnMut(&Event) -> ParserResult<()>,
     {
         if bytes.is_empty() {
-            return sax_parser_error!(ParserErrorDetails::ZeroLengthInput, Coords::default());
+            return parser_error!(ParserErrorDetails::ZeroLengthInput, Coords::default());
         }
         let mut reader = BufReader::new(bytes);
         let mut chars = default_decoder(&mut reader);
@@ -87,7 +89,7 @@ impl Parser {
         Callback: FnMut(&Event) -> ParserResult<()>,
     {
         if str.is_empty() {
-            return sax_parser_error!(ParserErrorDetails::ZeroLengthInput, Coords::default());
+            return parser_error!(ParserErrorDetails::ZeroLengthInput, Coords::default());
         }
         let mut reader = BufReader::new(str.as_bytes());
         let mut chars = default_decoder(&mut reader);
@@ -129,7 +131,7 @@ impl Parser {
                 self.parse_array(&mut lexer, &mut pointer, cb)
             }
             (_, span) => {
-                sax_parser_error!(ParserErrorDetails::InvalidRootObject, span.start)
+                parser_error!(ParserErrorDetails::InvalidRootObject, span.start)
             }
         }
     }
@@ -168,7 +170,7 @@ impl Parser {
                 emit_event!(cb, Match::Null, span, pointer)
             }
             (token, span) => {
-                sax_parser_error!(ParserErrorDetails::UnexpectedToken(token), span.start)
+                parser_error!(ParserErrorDetails::UnexpectedToken(token), span.start)
             }
         }
     }
@@ -195,7 +197,7 @@ impl Parser {
                             pointer.pop();
                         }
                         (_, _) => {
-                            return sax_parser_error!(
+                            return parser_error!(
                                 ParserErrorDetails::PairExpected,
                                 should_be_colon.1.start
                             )
@@ -207,7 +209,7 @@ impl Parser {
                     return emit_event!(cb, Match::EndObject, span, pointer);
                 }
                 (_token, span) => {
-                    return sax_parser_error!(ParserErrorDetails::InvalidArray, span.start)
+                    return parser_error!(ParserErrorDetails::InvalidArray, span.start)
                 }
             }
         }
@@ -254,7 +256,7 @@ impl Parser {
                 (Token::Null, span) => emit_event!(cb, Match::Null, span, pointer)?,
                 (Token::Comma, _) => index += 1,
                 (_token, span) => {
-                    return sax_parser_error!(ParserErrorDetails::InvalidArray, span.start);
+                    return parser_error!(ParserErrorDetails::InvalidArray, span.start);
                 }
             }
             pointer.pop();
@@ -264,16 +266,17 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
+    use std::{env, fs};
     use std::io::BufReader;
     use std::path::PathBuf;
     use std::time::Instant;
-    use std::{env, fs};
 
     use bytesize::ByteSize;
 
-    use crate::parsers::sax::Parser;
-    use crate::relative_file;
-    use crate::results::ParserErrorDetails;
+    use chisel_common::relative_file;
+
+    use crate::json::ParserErrorDetails;
+    use crate::json::sax::Parser;
 
     #[test]
     fn should_puke_on_empty_input() {

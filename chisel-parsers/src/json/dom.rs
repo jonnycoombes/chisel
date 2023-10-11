@@ -2,17 +2,17 @@
 //!
 //!
 use std::borrow::Cow;
-use std::fmt::Debug;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 
-use chisel_decoders::{default_decoder, new_decoder, Encoding};
+use chisel_decoders::{default_decoder, Encoding, new_decoder};
+use chisel_lexers::json::lexer::Lexer;
+use chisel_lexers::json::tokens::Token;
 
-use crate::lexer::lexer_core::{Lexer, Token};
-use crate::results::{ParserError, ParserErrorDetails, ParserErrorSource, ParserResult};
-use crate::JsonValue;
-use crate::{dom_parser_error, JsonKeyValue};
+use crate::json::{JsonKeyValue, JsonValue, ParserResult};
+use crate::json::{ParserError, ParserErrorDetails};
+use crate::parser_error;
 
 /// Main JSON parser struct
 pub struct Parser {
@@ -43,7 +43,7 @@ impl Parser {
                 self.parse(&mut chars)
             }
             Err(_) => {
-                dom_parser_error!(ParserErrorDetails::InvalidFile)
+                parser_error!(ParserErrorDetails::InvalidFile)
             }
         }
     }
@@ -72,7 +72,7 @@ impl Parser {
             (Token::StartObject, _) => self.parse_object(&mut lexer),
             (Token::StartArray, _) => self.parse_array(&mut lexer),
             (_, span) => {
-                dom_parser_error!(ParserErrorDetails::InvalidRootObject, span.start)
+                parser_error!(ParserErrorDetails::InvalidRootObject, span.start)
             }
         }
     }
@@ -87,7 +87,7 @@ impl Parser {
             (Token::Boolean(value), _) => Ok(JsonValue::Boolean(value)),
             (Token::Null, _) => Ok(JsonValue::Null),
             (token, span) => {
-                dom_parser_error!(ParserErrorDetails::UnexpectedToken(token), span.start)
+                parser_error!(ParserErrorDetails::UnexpectedToken(token), span.start)
             }
         }
     }
@@ -105,7 +105,7 @@ impl Parser {
                             value: self.parse_value(lexer)?,
                         }),
                         (_, _) => {
-                            return dom_parser_error!(
+                            return parser_error!(
                                 ParserErrorDetails::PairExpected,
                                 should_be_colon.1.start
                             )
@@ -115,7 +115,7 @@ impl Parser {
                 (Token::Comma, _) => (),
                 (Token::EndObject, _) => return Ok(JsonValue::Object(pairs)),
                 (_token, span) => {
-                    return dom_parser_error!(ParserErrorDetails::InvalidObject, span.start);
+                    return parser_error!(ParserErrorDetails::InvalidObject, span.start);
                 }
             }
         }
@@ -136,7 +136,7 @@ impl Parser {
                 (Token::Null, _) => values.push(JsonValue::Null),
                 (Token::Comma, _) => (),
                 (_token, span) => {
-                    return dom_parser_error!(ParserErrorDetails::InvalidArray, span.start);
+                    return parser_error!(ParserErrorDetails::InvalidArray, span.start);
                 }
             }
         }
@@ -147,15 +147,16 @@ impl Parser {
 mod tests {
     #![allow(unused_macros)]
 
+    use std::{env, fs};
     use std::path::PathBuf;
     use std::time::Instant;
-    use std::{env, fs};
 
     use bytesize::ByteSize;
 
-    use crate::parsers::dom::Parser;
-    use crate::relative_file;
-    use crate::results::ParserErrorDetails;
+    use chisel_common::relative_file;
+
+    use crate::json::dom::Parser;
+    use crate::json::ParserErrorDetails;
 
     #[test]
     fn should_parse_char_iterators_directly() {

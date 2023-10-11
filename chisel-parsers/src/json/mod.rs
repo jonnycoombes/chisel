@@ -1,40 +1,46 @@
-//! Error and [Result] types
-//!
-//! This module contains definitions for the main [Result] types used throughout the parser.
-
+use std::borrow::Cow;
 use std::fmt::{Display, Formatter};
-use std::io::BufRead;
 
 use chisel_common::char::coords::Coords;
+use chisel_lexers::json::lexer::LexerError;
+use chisel_lexers::json::tokens::Token;
 
-use crate::lexer::lexer_core::Token;
+/// The JSON DOM parser
+pub mod dom;
 
+pub mod events;
+/// The JSON SAX parser
+pub mod sax;
+
+/// Structure representing a JSON key value pair
+#[derive(Debug)]
+pub struct JsonKeyValue<'a> {
+    /// The key for the pair
+    pub key: String,
+    /// The JSON value
+    pub value: JsonValue<'a>,
+}
+
+/// Basic enumeration of different Json values
+#[derive(Debug)]
+pub enum JsonValue<'a> {
+    /// Map of values
+    Object(Vec<JsonKeyValue<'a>>),
+    /// Array of values
+    Array(Vec<JsonValue<'a>>),
+    /// Canonical string value
+    String(Cow<'a, str>),
+    /// Floating point numeric value
+    Float(f64),
+    /// Integer numeric value
+    Integer(i64),
+    /// Canonical boolean value
+    Boolean(bool),
+    /// Canonical null value
+    Null,
+}
 /// Global result type used throughout the parser stages
 pub type ParserResult<T> = Result<T, ParserError>;
-
-/// Enumeration of the various different parser stages that can produce an error
-#[derive(Debug, Copy, Clone)]
-pub enum ParserErrorSource {
-    /// The character input stage of the parser
-    LexerInput,
-    /// The lexing stage of the parser
-    Lexer,
-    /// The parsing stage of the DOM parser
-    DomParser,
-    /// The parsing stage of the SAX parser
-    SaxParser,
-}
-
-impl Display for ParserErrorSource {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ParserErrorSource::LexerInput => write!(f, "lexer input"),
-            ParserErrorSource::Lexer => write!(f, "lexing"),
-            ParserErrorSource::DomParser => write!(f, "DOM parsing"),
-            ParserErrorSource::SaxParser => write!(f, "SAX parsing"),
-        }
-    }
-}
 
 /// A global enumeration of error codes
 #[derive(Debug, Clone, PartialEq)]
@@ -71,6 +77,8 @@ pub enum ParserErrorDetails {
     InvalidEscapeSequence(String),
     /// An invalid unicode escape sequence (\uXXX) has been found within the input.
     InvalidUnicodeEscapeSequence(String),
+    /// A bubbled error from the lexical analysis backend
+    LexerError(String),
 }
 
 impl Display for ParserErrorDetails {
@@ -105,6 +113,9 @@ impl Display for ParserErrorDetails {
             ParserErrorDetails::InvalidUnicodeEscapeSequence(seq) => {
                 write!(f, "invalid unicode escape sequence: \"{}\"", seq)
             }
+            ParserErrorDetails::LexerError(repr) => {
+                write!(f, "lexer error reported: \"{}\"", repr)
+            }
         }
     }
 }
@@ -112,8 +123,6 @@ impl Display for ParserErrorDetails {
 /// The general error structure
 #[derive(Debug, Clone)]
 pub struct ParserError {
-    /// The originating source for the error
-    pub source: ParserErrorSource,
     /// The global error code for the error
     pub details: ParserErrorDetails,
     /// Parser [Coords]
@@ -125,84 +134,36 @@ impl Display for ParserError {
         if self.coords.is_some() {
             write!(
                 f,
-                "Source: {}, Details: {}, Coords: {}",
-                self.source,
+                "details: {}, coords: {}",
                 self.details,
                 self.coords.unwrap()
             )
         } else {
-            write!(f, "Source: {}, Details: {}", self.source, self.details)
+            write!(f, "details: {}", self.details)
         }
     }
 }
-#[macro_export]
-macro_rules! lexer_input_error {
-    ($details: expr, $coords : expr) => {
-        Err(ParserError {
-            source: ParserErrorSource::LexerInput,
-            details: $details,
-            coords: Some($coords),
-        })
-    };
-    ($details: expr) => {
-        Err(ParserError {
-            source: ParserErrorSource::LexerInput,
-            details: $details,
-            coords: None,
-        })
-    };
-}
-/// Helper macro for cooking up a [ParserError] specific to the lexer
-#[macro_export]
-macro_rules! lexer_error {
-    ($details: expr, $coords : expr) => {
-        Err(ParserError {
-            source: ParserErrorSource::Lexer,
-            details: $details,
-            coords: Some($coords),
-        })
-    };
-    ($details: expr) => {
-        Err(ParserError {
-            source: ParserErrorSource::Lexer,
-            details: $details,
-            coords: None,
-        })
-    };
+
+impl From<LexerError> for ParserError {
+    fn from(value: LexerError) -> Self {
+        ParserError {
+            details: ParserErrorDetails::LexerError(value.details.to_string()),
+            coords: value.coords,
+        }
+    }
 }
 
 /// Helper macro for cooking up a [ParserError] specific to the DOM parser
 #[macro_export]
-macro_rules! dom_parser_error {
+macro_rules! parser_error {
     ($details: expr, $coords: expr) => {
         Err(ParserError {
-            source: ParserErrorSource::DomParser,
             details: $details,
             coords: Some($coords),
         })
     };
     ($details: expr) => {
         Err(ParserError {
-            source: ParserErrorSource::DomParser,
-            details: $details,
-            coords: None,
-        })
-    };
-}
-
-/// Helper macro for cooking up a [ParserError] specific to the SAX parser
-#[macro_export]
-macro_rules! sax_parser_error {
-    ($details: expr, $coords: expr) => {
-        Err(ParserError {
-            source: ParserErrorSource::SaxParser,
-            details: $details,
-            coords: Some($coords),
-        })
-    };
-    ($details: expr) => {
-        Err(ParserError {
-            source: ParserErrorSource::SaxParser,
             details: $details,
             coords: None,
         })
