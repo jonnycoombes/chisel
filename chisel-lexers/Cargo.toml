@@ -28,3 +28,8 @@ mixed_numerics = ["lexical"]
 [[bench]]
 name = "scanner"
 harness = false
+
+
+[[bench]]
+name = "json_lexer"
+harness = false

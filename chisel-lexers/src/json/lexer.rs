@@ -1,8 +1,8 @@
-//! JSON lexer backend implementation 
 //!
 #![allow(unused_assignments)]
 #![allow(unused_variables)]
 #![allow(unreachable_code)]
+#![allow(dead_code)]
 
 use std::fmt::{Display, Formatter};
 
@@ -12,7 +12,7 @@ use chisel_common::char::span::Span;
 use crate::json::tokens::{PackedToken, Token};
 use crate::scanner::{CharWithCoords, Scanner};
 
-/// JSON lexer backend result type 
+/// JSON lexer backend result type
 pub type LexerResult<T> = Result<T, LexerError>;
 
 /// A global enumeration of error codes
@@ -133,17 +133,16 @@ macro_rules! lexer_error {
     ($details: expr, $coords: expr) => {
         LexerError {
             details: $details,
-            coords: Some(coords)
+            coords: Some($coords),
         }
     };
     ($details: expr) => {
         LexerError {
             details: $details,
-            coords: None
+            coords: None,
         }
     };
 }
-
 
 /// Default lookahead buffer size
 const DEFAULT_BUFFER_SIZE: usize = 4096;
@@ -162,7 +161,6 @@ macro_rules! packed_token {
         Ok(($t, Span { start: $s, end: $s }))
     };
 }
-
 
 /// Pattern matching macro
 macro_rules! match_zero {
@@ -261,7 +259,7 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(chars: &'a mut impl Iterator<Item=char>) -> Self {
+    pub fn new(chars: &'a mut impl Iterator<Item = char>) -> Self {
         Lexer {
             input: Scanner::new(chars),
         }
@@ -304,16 +302,16 @@ impl<'a> Lexer<'a> {
 
     /// Advance the input by one
     fn advance(&mut self, skip_whitespace: bool) -> LexerResult<()> {
-        self.input.advance(skip_whitespace).map_err(|e| {
-            lexer_error!(LexerErrorDetails::EndOfInput)
-        })
+        self.input
+            .advance(skip_whitespace)
+            .map_err(|e| lexer_error!(LexerErrorDetails::EndOfInput))
     }
 
     /// Advance the input by n
     fn advance_n(&mut self, n: usize, skip_whitespace: bool) -> LexerResult<()> {
-        self.input.advance_n(n, skip_whitespace).map_err(|e| {
-            lexer_error!(LexerErrorDetails::EndOfInput)
-        })
+        self.input
+            .advance_n(n, skip_whitespace)
+            .map_err(|e| lexer_error!(LexerErrorDetails::EndOfInput))
     }
 
     /// Grab the current input string
@@ -381,15 +379,16 @@ impl<'a> Lexer<'a> {
                             match_escape_unicode_suffix!() => self.check_unicode_sequence()?,
                             _ => {
                                 return wrapped_lexer_error!(
-                                    LexerErrorDetails::InvalidEscapeSequence(
-                                        self.current_string()
-                                    ),
+                                    LexerErrorDetails::InvalidEscapeSequence(self.current_string()),
                                     self.back_coords()
                                 );
                             }
                         },
                         Err(err) => {
-                            return wrapped_lexer_error!(err.details, err.coords.unwrap());
+                            return wrapped_lexer_error!(
+                                LexerErrorDetails::EndOfInput,
+                                err.coords.unwrap()
+                            );
                         }
                     },
                     match_quote!() => {
@@ -420,7 +419,10 @@ impl<'a> Lexer<'a> {
                     }
                 }
                 Err(e) => {
-                    return wrapped_lexer_error!(LexerErrorDetails::EndOfInput, self.absolute_position());
+                    return wrapped_lexer_error!(
+                        LexerErrorDetails::EndOfInput,
+                        self.absolute_position()
+                    );
                 }
             }
         }
@@ -574,10 +576,12 @@ impl<'a> Lexer<'a> {
             match_minus!() => self
                 .input
                 .advance(false)
+                .map_err(|e| lexer_error!(LexerErrorDetails::EndOfInput))
                 .and_then(|_| self.check_following_minus()),
             match_zero!() => self
                 .input
                 .advance(false)
+                .map_err(|e| lexer_error!(LexerErrorDetails::EndOfInput))
                 .and_then(|_| self.check_following_zero()),
             _ => Ok(true),
         }
@@ -628,19 +632,22 @@ impl<'a> Lexer<'a> {
 
     /// Match on a null token
     fn match_null(&mut self) -> LexerResult<PackedToken> {
-        self.input.advance_n(3, false).and_then(|_| {
-            if self.current_chars() == NULL_PATTERN {
-                packed_token!(Token::Null, self.back_coords(), self.front_coords())
-            } else {
-                wrapped_lexer_error!(
-                    LexerErrorDetails::MatchFailed(
-                        String::from_iter(NULL_PATTERN.iter()),
-                        self.current_string()
-                    ),
-                    self.back_coords()
-                )
-            }
-        })
+        self.input
+            .advance_n(3, false)
+            .map_err(|e| lexer_error!(LexerErrorDetails::EndOfInput, self.absolute_position()))
+            .and_then(|_| {
+                if self.current_chars() == NULL_PATTERN {
+                    packed_token!(Token::Null, self.back_coords(), self.front_coords())
+                } else {
+                    wrapped_lexer_error!(
+                        LexerErrorDetails::MatchFailed(
+                            String::from_iter(NULL_PATTERN.iter()),
+                            self.current_string()
+                        ),
+                        self.back_coords()
+                    )
+                }
+            })
     }
 
     /// Match on a true token
@@ -693,8 +700,8 @@ mod tests {
     use std::io::{BufRead, BufReader};
     use std::time::Instant;
 
-    use chisel_common::{lines_from_relative_file, reader_from_bytes};
     use chisel_common::char::span::Span;
+    use chisel_common::{lines_from_relative_file, reader_from_bytes};
     use chisel_decoders::utf8::Utf8Decoder;
 
     use crate::json::lexer::{Lexer, LexerError, LexerResult};
