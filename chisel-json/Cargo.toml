@@ -18,7 +18,7 @@ chisel-decoders = {path = "../chisel-decoders"}
 chisel-json-pointer = {path = "../chisel-json-pointer"}
 
 [dev-dependencies]
-bytesize = "1.2.0"
+bytesize = {workspace = true}
 criterion = {workspace = true, features = ["html_reports"]}
 pprof = {workspace = true, features = ["flamegraph", "criterion", "protobuf"]}
 

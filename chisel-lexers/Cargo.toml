@@ -13,3 +13,12 @@ repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-lexe
 [dependencies]
 chisel-common = {path = "../chisel-common"}
 chisel-decoders = {path = "../chisel-decoders"}
+
+[dev-dependencies]
+bytesize = {workspace= true}
+criterion = {workspace = true, features = ["html_reports"]}
+pprof = {workspace = true, features = ["flamegraph", "criterion", "protobuf"]}
+
+[[bench]]
+name = "scanner"
+harness = false
