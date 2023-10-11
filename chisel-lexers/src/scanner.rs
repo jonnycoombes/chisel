@@ -1,8 +1,59 @@
+#![allow(dead_code)]
 use chisel_common::char::coords::Coords;
 use chisel_common::char::span::Span;
+use std::fmt::{Display, Formatter};
 
-use crate::lexer_input_error;
-use crate::results::{ParserError, ParserErrorDetails, ParserErrorSource, ParserResult};
+/// General result type for the scanner
+pub type ScannerResult<T> = Result<T, ScannerError>;
+
+/// An enumeration of possible faults
+#[derive(Debug, Clone, PartialEq)]
+pub enum ScannerErrorDetails {
+    EndOfInput,
+}
+
+/// Convert specific fault codes into human-readable strings
+impl Display for ScannerErrorDetails {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ScannerErrorDetails::EndOfInput => write!(f, "end of input reached"),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ScannerError {
+    /// The error code associated with the error
+    pub details: ScannerErrorDetails,
+    /// [Coords] providing location information relating to the error
+    pub coords: Option<Coords>,
+}
+
+/// Convert a [ScannerError] into a human-readable format
+impl Display for ScannerError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self.coords {
+            Some(coords) => write!(f, "details: {}, coords: {}", self.details, coords),
+            None => write!(f, "details: {}", self.details),
+        }
+    }
+}
+
+/// Helper macro for the quick definition of a [ScannerError]
+macro_rules! scanner_error {
+    ($details: expr, $coords : expr) => {
+        Err(ScannerError {
+            details: $details,
+            coords: Some($coords),
+        })
+    };
+    ($details : expr) => {
+        Err(ScannerError {
+            details: $details,
+            coords: None,
+        })
+    };
+}
 
 /// Aggregate structure consisting of a character and it's position within the input stream
 pub struct CharWithCoords {
@@ -10,7 +61,7 @@ pub struct CharWithCoords {
     pub coords: Coords,
 }
 
-/// A tuple consisting of a stringish thing, and associated span
+/// A tuple consisting of a string-like thing, and associated span
 pub struct StringWithSpan {
     pub str: String,
     pub span: Span,
@@ -29,7 +80,7 @@ macro_rules! clone_char_with_coords {
 /// Structure to manage input state information for the lexer.  Allows for an absolute position as well as a sliding
 /// buffer of (as of yet) unconsumed entries
 #[derive()]
-pub struct LexerInput<'a> {
+pub struct Scanner<'a> {
     /// Single lookahead character
     lookahead: Option<char>,
 
@@ -46,12 +97,12 @@ pub struct LexerInput<'a> {
     pushbacks: Vec<CharWithCoords>,
 }
 
-/// An input adapter used by the lexer. A [LexerInput] is responsible for managing input
+/// An input adapter used by the lexer. A [Scanner] is responsible for managing input
 /// state to to provide access to segments (or individual characters) from within the source input.
-impl<'a> LexerInput<'a> {
+impl<'a> Scanner<'a> {
     /// Create a new state instance with all the defaults
     pub fn new(chars: &'a mut dyn Iterator<Item = char>) -> Self {
-        LexerInput {
+        Scanner {
             lookahead: None,
             chars,
             position: Coords::default(),
@@ -97,7 +148,7 @@ impl<'a> LexerInput<'a> {
     }
 
     /// Advance the input to the next available character, optionally skipping whitespace.
-    pub fn advance(&mut self, skip_whitespace: bool) -> ParserResult<()> {
+    pub fn advance(&mut self, skip_whitespace: bool) -> ScannerResult<()> {
         // skip any whitespace, which may populate pushback or lookahead
         if skip_whitespace {
             self.skip_whitespace()?;
@@ -124,7 +175,7 @@ impl<'a> LexerInput<'a> {
                 }
                 Ok(())
             }
-            None => lexer_input_error!(ParserErrorDetails::EndOfInput, self.position),
+            None => scanner_error!(ScannerErrorDetails::EndOfInput, self.position),
         };
     }
 
@@ -144,7 +195,7 @@ impl<'a> LexerInput<'a> {
     /// pushback buffer, or alternatively in the case of line endings, we may need to populate
     /// the lookahead with a character.  Populating the pushback buffer should update coordinate
     /// information, populating the lookahead will not
-    fn skip_whitespace(&mut self) -> ParserResult<()> {
+    fn skip_whitespace(&mut self) -> ScannerResult<()> {
         loop {
             let next = self.next_char();
             match next {
@@ -167,8 +218,8 @@ impl<'a> LexerInput<'a> {
                                     }
                                 },
                                 None => {
-                                    return lexer_input_error!(
-                                        ParserErrorDetails::EndOfInput,
+                                    return scanner_error!(
+                                        ScannerErrorDetails::EndOfInput,
                                         self.position
                                     );
                                 }
@@ -187,7 +238,7 @@ impl<'a> LexerInput<'a> {
                     }
                 },
                 None => {
-                    return lexer_input_error!(ParserErrorDetails::EndOfInput, self.position);
+                    return scanner_error!(ScannerErrorDetails::EndOfInput, self.position);
                 }
             }
         }
@@ -216,7 +267,7 @@ impl<'a> LexerInput<'a> {
     /// Advance the input over n available characters, returning a [ParserError] if it's not
     /// possible to do so. After calling this method the input state should be read using the
     /// other associated functions available for this type
-    pub fn advance_n(&mut self, n: usize, skip_whitespace: bool) -> ParserResult<()> {
+    pub fn advance_n(&mut self, n: usize, skip_whitespace: bool) -> ScannerResult<()> {
         for _ in 0..n {
             self.advance(skip_whitespace)?;
         }
@@ -293,25 +344,23 @@ impl<'a> LexerInput<'a> {
 
 #[cfg(test)]
 mod test {
-    use std::io::BufReader;
-
+    use crate::scanner::Scanner;
+    use chisel_common::reader_from_bytes;
     use chisel_decoders::utf8::Utf8Decoder;
-
-    use crate::lexer::lexer_input::LexerInput;
-    use crate::reader_from_bytes;
+    use std::io::BufReader;
 
     #[test]
     fn should_create_new() {
         let mut reader = reader_from_bytes!("{}[],:");
         let mut decoder = Utf8Decoder::new(&mut reader);
-        let _ = LexerInput::new(&mut decoder);
+        let _ = Scanner::new(&mut decoder);
     }
 
     #[test]
     fn should_consume_single_lines_correctly() {
         let mut reader = reader_from_bytes!("this is a test line");
         let mut decoder = Utf8Decoder::new(&mut reader);
-        let mut input = LexerInput::new(&mut decoder);
+        let mut input = Scanner::new(&mut decoder);
         let result = input.advance(true);
         assert!(result.is_ok());
         assert_eq!(input.front().unwrap().ch, 't');

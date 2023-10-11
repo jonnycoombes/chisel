@@ -11,3 +11,5 @@ categories = ["text-processing"]
 repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-lexers"
 
 [dependencies]
+chisel-common = {path = "../chisel-common"}
+chisel-decoders = {path = "../chisel-decoders"}
