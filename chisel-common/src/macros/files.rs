@@ -1,3 +1,4 @@
+/// Macro for some relative file shennigans
 #[macro_export]
 macro_rules! relative_file {
     ($f : expr) => {{
@@ -6,6 +7,7 @@ macro_rules! relative_file {
     }};
 }
 
+/// Instantiate a file relative to the cargo manifest directory
 #[macro_export]
 macro_rules! file_from_relative_path {
     ($f : expr) => {
@@ -15,16 +17,7 @@ macro_rules! file_from_relative_path {
     };
 }
 
-#[macro_export]
-macro_rules! chars_from_file {
-    ($f : expr) => {{
-        let f = File::open($f).unwrap();
-        let mut reader = BufReader::new(f);
-        let decoders = DecoderSelector::default();
-        DecoderSelector::default().default_decoder(&mut reader)
-    }};
-}
-
+/// Take some bytes and create a [BufRead]
 #[macro_export]
 macro_rules! reader_from_bytes {
     ($b : expr) => {{
@@ -33,6 +26,7 @@ macro_rules! reader_from_bytes {
     }};
 }
 
+/// Grab all the lines from a file relative to the current directory
 #[macro_export]
 macro_rules! lines_from_relative_file {
     ($f : expr) => {{
