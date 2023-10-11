@@ -7,7 +7,6 @@ rust-version.workspace = true
 description = "Chisel common macros, types and functions"
 license = "MIT OR Apache-2.0"
 keywords = ["utility"]
-categories = ["general"]
 repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-common"
 
 [dependencies]
