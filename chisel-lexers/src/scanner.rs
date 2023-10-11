@@ -180,7 +180,7 @@ impl<'a> Scanner<'a> {
     }
 
     /// Look ahead one in the input stream
-    fn try_lookahead(&mut self) -> Option<char> {
+    pub fn try_lookahead(&mut self) -> Option<char> {
         self.lookahead = self.chars.next();
         self.lookahead
     }
