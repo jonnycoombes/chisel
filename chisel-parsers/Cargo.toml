@@ -20,3 +20,12 @@ chisel-lexers = {path = "../chisel-lexers"}
 bytesize = {workspace = true}
 criterion = {workspace = true, features = ["html_reports"]}
 pprof = {workspace = true, features = ["flamegraph", "criterion", "protobuf"]}
+
+[[bench]]
+name = "dom_parsing"
+harness = false
+
+
+[[bench]]
+name = "sax_parsing"
+harness = false

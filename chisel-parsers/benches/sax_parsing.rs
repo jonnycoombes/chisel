@@ -1,7 +1,8 @@
-use chisel_json::parsers::sax::Parser;
+use chisel_parsers::json::sax::Parser;
 use criterion::{criterion_group, criterion_main, Criterion};
 use pprof::criterion::{Output, PProfProfiler};
 
+use std::path::PathBuf;
 macro_rules! build_parse_benchmark {
     ($func : tt, $filename : expr) => {
         fn $func() {
