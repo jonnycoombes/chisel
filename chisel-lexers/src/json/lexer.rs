@@ -1,18 +1,149 @@
-//! Lexer used by both DOM and SAX parsers
+//! JSON lexer backend implementation 
 //!
 #![allow(unused_assignments)]
 #![allow(unused_variables)]
 #![allow(unreachable_code)]
 
 use std::fmt::{Display, Formatter};
-use std::io::BufRead;
 
 use chisel_common::char::coords::Coords;
 use chisel_common::char::span::Span;
 
-use crate::lexer::lexer_input::{CharWithCoords, LexerInput};
-use crate::lexer_error;
-use crate::results::{ParserError, ParserErrorDetails, ParserErrorSource, ParserResult};
+use crate::json::tokens::{PackedToken, Token};
+use crate::scanner::{CharWithCoords, Scanner};
+
+/// JSON lexer backend result type 
+pub type LexerResult<T> = Result<T, LexerError>;
+
+/// A global enumeration of error codes
+#[derive(Debug, Clone, PartialEq)]
+pub enum LexerErrorDetails {
+    /// An invalid file has been specified.  It might not exist, or might not be accessible
+    InvalidFile,
+    /// We can't parse nothing.
+    ZeroLengthInput,
+    /// End of input has been reached. This is used as a stopping condition at various points.
+    EndOfInput,
+    /// If pulling bytes from an underlying stream (or [BufRead]) of some description, and an
+    /// error occurs, this will be returned.
+    StreamFailure,
+    /// Dodgy UTF8 has been found in the input.
+    NonUtf8InputDetected,
+    /// Edge case error condition. This means that something has gone horribly wrong with the
+    /// parse.
+    UnexpectedToken(Token),
+    /// KV pair is expected but not detected.
+    PairExpected,
+    /// Supplied JSON doesn't have an object or array as a root object.
+    InvalidRootObject,
+    /// The parse of an object has failed.
+    InvalidObject,
+    /// The parse of an array has failed.
+    InvalidArray,
+    /// An invalid character has been detected within the input.
+    InvalidCharacter(char),
+    /// Whilst looking for a literal string token (null, true, false) a match couldn't be found
+    MatchFailed(String, String),
+    /// A number has been found with an incorrect string representation.
+    InvalidNumericRepresentation(String),
+    /// An invalid escape sequence has been found within the input.
+    InvalidEscapeSequence(String),
+    /// An invalid unicode escape sequence (\uXXX) has been found within the input.
+    InvalidUnicodeEscapeSequence(String),
+}
+
+impl Display for LexerErrorDetails {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LexerErrorDetails::InvalidFile => write!(f, "invalid file specified"),
+            LexerErrorDetails::ZeroLengthInput => write!(f, "zero length input"),
+            LexerErrorDetails::EndOfInput => write!(f, "end of input reached"),
+            LexerErrorDetails::StreamFailure => write!(f, "failure in the underlying stream"),
+            LexerErrorDetails::NonUtf8InputDetected => write!(f, "non-UTF8 input"),
+            LexerErrorDetails::UnexpectedToken(token) => {
+                write!(f, "unexpected token found: {}", token)
+            }
+            LexerErrorDetails::PairExpected => {
+                write!(f, "pair expected, something else was found")
+            }
+            LexerErrorDetails::InvalidRootObject => write!(f, "invalid JSON"),
+            LexerErrorDetails::InvalidObject => write!(f, "invalid object"),
+            LexerErrorDetails::InvalidArray => write!(f, "invalid array"),
+            LexerErrorDetails::InvalidCharacter(ch) => write!(f, "invalid character: \'{}\'", ch),
+            LexerErrorDetails::MatchFailed(first, second) => write!(
+                f,
+                "a match failed. Looking for \"{}\", found \"{}\"",
+                first, second
+            ),
+            LexerErrorDetails::InvalidNumericRepresentation(repr) => {
+                write!(f, "invalid number representation: \"{}\"", repr)
+            }
+            LexerErrorDetails::InvalidEscapeSequence(seq) => {
+                write!(f, "invalid escape sequence: \"{}\"", seq)
+            }
+            LexerErrorDetails::InvalidUnicodeEscapeSequence(seq) => {
+                write!(f, "invalid unicode escape sequence: \"{}\"", seq)
+            }
+        }
+    }
+}
+
+/// The general error structure
+#[derive(Debug, Clone)]
+pub struct LexerError {
+    /// The global error code for the error
+    pub details: LexerErrorDetails,
+    /// Parser [Coords]
+    pub coords: Option<Coords>,
+}
+
+impl Display for LexerError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.coords.is_some() {
+            write!(
+                f,
+                "details: {}, coords: {}",
+                self.details,
+                self.coords.unwrap()
+            )
+        } else {
+            write!(f, "details: {}", self.details)
+        }
+    }
+}
+
+/// Wrap a [LexerError] in a top level [Err]
+macro_rules! wrapped_lexer_error {
+    ($details: expr, $coords : expr) => {
+        Err(LexerError {
+            details: $details,
+            coords: Some($coords),
+        })
+    };
+    ($details: expr) => {
+        Err(LexerError {
+            details: $details,
+            coords: None,
+        })
+    };
+}
+
+/// Create a [LexerError]
+macro_rules! lexer_error {
+    ($details: expr, $coords: expr) => {
+        LexerError {
+            details: $details,
+            coords: Some(coords)
+        }
+    };
+    ($details: expr) => {
+        LexerError {
+            details: $details,
+            coords: None
+        }
+    };
+}
+
 
 /// Default lookahead buffer size
 const DEFAULT_BUFFER_SIZE: usize = 4096;
@@ -23,80 +154,101 @@ const TRUE_PATTERN: [char; 4] = ['t', 'r', 'u', 'e'];
 /// Pattern to match for false
 const FALSE_PATTERN: [char; 5] = ['f', 'a', 'l', 's', 'e'];
 
+macro_rules! packed_token {
+    ($t:expr, $s:expr, $e:expr) => {
+        Ok(($t, Span { start: $s, end: $e }))
+    };
+    ($t:expr, $s:expr) => {
+        Ok(($t, Span { start: $s, end: $s }))
+    };
+}
 
 
+/// Pattern matching macro
 macro_rules! match_zero {
     () => {
         '0'
     };
 }
 
+/// Pattern matching macro
 macro_rules! match_minus {
     () => {
         '-'
     };
 }
 
+/// Pattern matching macro
 macro_rules! match_plus_minus {
     () => {
         '+' | '-'
     };
 }
 
+/// Pattern matching macro
 macro_rules! match_digit {
     () => {
         '0'..='9'
     };
 }
 
+/// Pattern matching macro
 macro_rules! match_non_zero_digit {
     () => {
         '1'..='9'
     };
 }
 
+/// Pattern matching macro
 macro_rules! match_exponent {
     () => {
         'e' | 'E'
     };
 }
 
+/// Pattern matching macro
 macro_rules! match_period {
     () => {
         '.'
     };
 }
 
+/// Pattern matching macro
 macro_rules! match_numeric_terminator {
     () => {
         ']' | '}' | ','
     };
 }
 
+/// Pattern matching macro
 macro_rules! match_escape {
     () => {
         '\\'
     };
 }
 
+/// Pattern matching macro
 macro_rules! match_escape_non_unicode_suffix {
     () => {
         'n' | 't' | 'r' | '\\' | '/' | 'b' | 'f' | '\"'
     };
 }
 
+/// Pattern matching macro
 macro_rules! match_escape_unicode_suffix {
     () => {
         'u'
     };
 }
 
+/// Pattern matching macro
 macro_rules! match_quote {
     () => {
         '\"'
     };
 }
 
+/// Pattern matching macro
 macro_rules! match_newline {
     () => {
         '\n'
@@ -105,13 +257,13 @@ macro_rules! match_newline {
 
 pub struct Lexer<'a> {
     /// Input coordinate state
-    input: LexerInput<'a>,
+    input: Scanner<'a>,
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(chars: &'a mut impl Iterator<Item = char>) -> Self {
+    pub fn new(chars: &'a mut impl Iterator<Item=char>) -> Self {
         Lexer {
-            input: LexerInput::new(chars),
+            input: Scanner::new(chars),
         }
     }
 
@@ -151,13 +303,17 @@ impl<'a> Lexer<'a> {
     }
 
     /// Advance the input by one
-    fn advance(&mut self, skip_whitespace: bool) -> ParserResult<()> {
-        self.input.advance(skip_whitespace)
+    fn advance(&mut self, skip_whitespace: bool) -> LexerResult<()> {
+        self.input.advance(skip_whitespace).map_err(|e| {
+            lexer_error!(LexerErrorDetails::EndOfInput)
+        })
     }
 
     /// Advance the input by n
-    fn advance_n(&mut self, n: usize, skip_whitespace: bool) -> ParserResult<()> {
-        self.input.advance_n(n, skip_whitespace)
+    fn advance_n(&mut self, n: usize, skip_whitespace: bool) -> LexerResult<()> {
+        self.input.advance_n(n, skip_whitespace).map_err(|e| {
+            lexer_error!(LexerErrorDetails::EndOfInput)
+        })
     }
 
     /// Grab the current input string
@@ -176,7 +332,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Consume the next [Token] from the input
-    pub fn consume(&mut self) -> ParserResult<PackedToken> {
+    pub fn consume(&mut self) -> LexerResult<PackedToken> {
         self.input.clear();
         match self.advance(true) {
             Ok(_) => match self.input.front() {
@@ -196,26 +352,26 @@ impl<'a> Lexer<'a> {
                 Some(CharWithCoords { ch: 'f', coords }) => self.match_false(),
                 Some(CharWithCoords { ch: '-', coords }) => self.match_number(),
                 Some(CharWithCoords { ch: d, coords }) if d.is_ascii_digit() => self.match_number(),
-                Some(CharWithCoords { ch, coords }) => lexer_error!(
-                    ParserErrorDetails::InvalidCharacter(ch.clone()),
+                Some(CharWithCoords { ch, coords }) => wrapped_lexer_error!(
+                    LexerErrorDetails::InvalidCharacter(ch.clone()),
                     coords.clone()
                 ),
-                None => lexer_error!(ParserErrorDetails::EndOfInput),
+                None => wrapped_lexer_error!(LexerErrorDetails::EndOfInput),
             },
             Err(err) => match err.details {
-                ParserErrorDetails::EndOfInput => {
+                LexerErrorDetails::EndOfInput => {
                     packed_token!(Token::EndOfInput, self.input.position())
                 }
                 _ => match err.coords {
-                    Some(coords) => lexer_error!(err.details, coords),
-                    None => lexer_error!(err.details),
+                    Some(coords) => wrapped_lexer_error!(err.details, coords),
+                    None => wrapped_lexer_error!(err.details),
                 },
             },
         }
     }
 
     /// Match on a valid Json string.
-    fn match_string(&mut self) -> ParserResult<PackedToken> {
+    fn match_string(&mut self) -> LexerResult<PackedToken> {
         loop {
             match self.advance(false) {
                 Ok(_) => match self.front_char() {
@@ -224,8 +380,8 @@ impl<'a> Lexer<'a> {
                             match_escape_non_unicode_suffix!() => (),
                             match_escape_unicode_suffix!() => self.check_unicode_sequence()?,
                             _ => {
-                                return lexer_error!(
-                                    ParserErrorDetails::InvalidEscapeSequence(
+                                return wrapped_lexer_error!(
+                                    LexerErrorDetails::InvalidEscapeSequence(
                                         self.current_string()
                                     ),
                                     self.back_coords()
@@ -233,7 +389,7 @@ impl<'a> Lexer<'a> {
                             }
                         },
                         Err(err) => {
-                            return lexer_error!(err.details, err.coords.unwrap());
+                            return wrapped_lexer_error!(err.details, err.coords.unwrap());
                         }
                     },
                     match_quote!() => {
@@ -245,26 +401,26 @@ impl<'a> Lexer<'a> {
                     }
                     _ => (),
                 },
-                Err(err) => return lexer_error!(err.details, err.coords.unwrap()),
+                Err(err) => return wrapped_lexer_error!(err.details, err.coords.unwrap()),
             }
         }
     }
 
     /// Check for a valid unicode escape sequence of the form '\uXXXX'
-    fn check_unicode_sequence(&mut self) -> ParserResult<()> {
+    fn check_unicode_sequence(&mut self) -> LexerResult<()> {
         let start_position = self.absolute_position();
         for i in 1..=4 {
             match self.advance(false) {
                 Ok(_) => {
                     if !self.front_char().is_ascii_hexdigit() {
-                        return lexer_error!(
-                            ParserErrorDetails::InvalidUnicodeEscapeSequence(self.current_string()),
+                        return wrapped_lexer_error!(
+                            LexerErrorDetails::InvalidUnicodeEscapeSequence(self.current_string()),
                             start_position
                         );
                     }
                 }
                 Err(e) => {
-                    return lexer_error!(ParserErrorDetails::EndOfInput, self.absolute_position());
+                    return wrapped_lexer_error!(LexerErrorDetails::EndOfInput, self.absolute_position());
                 }
             }
         }
@@ -281,7 +437,7 @@ impl<'a> Lexer<'a> {
     /// - Exponents must be well-formed
     /// - An non-exponent alphabetic found in the representation will result in an error
     /// - Numbers can be terminated by commas, brackets and whitespace only (end of pair, end of array)
-    fn match_number(&mut self) -> ParserResult<PackedToken> {
+    fn match_number(&mut self) -> LexerResult<PackedToken> {
         let mut have_exponent = false;
         let mut have_decimal = false;
 
@@ -297,8 +453,8 @@ impl<'a> Lexer<'a> {
                                     self.check_following_exponent()?;
                                     have_exponent = true;
                                 } else {
-                                    return lexer_error!(
-                                        ParserErrorDetails::InvalidNumericRepresentation(
+                                    return wrapped_lexer_error!(
+                                        LexerErrorDetails::InvalidNumericRepresentation(
                                             self.current_string()
                                         ),
                                         self.back_coords()
@@ -309,8 +465,8 @@ impl<'a> Lexer<'a> {
                                 if !have_decimal {
                                     have_decimal = true;
                                 } else {
-                                    return lexer_error!(
-                                        ParserErrorDetails::InvalidNumericRepresentation(
+                                    return wrapped_lexer_error!(
+                                        LexerErrorDetails::InvalidNumericRepresentation(
                                             self.current_string()
                                         ),
                                         self.back_coords()
@@ -326,16 +482,16 @@ impl<'a> Lexer<'a> {
                                 break;
                             }
                             ch if ch.is_alphabetic() => {
-                                return lexer_error!(
-                                    ParserErrorDetails::InvalidNumericRepresentation(
+                                return wrapped_lexer_error!(
+                                    LexerErrorDetails::InvalidNumericRepresentation(
                                         self.current_string()
                                     ),
                                     self.back_coords()
                                 );
                             }
                             _ => {
-                                return lexer_error!(
-                                    ParserErrorDetails::InvalidNumericRepresentation(
+                                return wrapped_lexer_error!(
+                                    LexerErrorDetails::InvalidNumericRepresentation(
                                         self.current_string()
                                     ),
                                     self.back_coords()
@@ -344,8 +500,8 @@ impl<'a> Lexer<'a> {
                         },
                         Err(err) => {
                             return match err.coords {
-                                Some(coords) => lexer_error!(err.details, coords),
-                                None => lexer_error!(err.details),
+                                Some(coords) => wrapped_lexer_error!(err.details, coords),
+                                None => wrapped_lexer_error!(err.details),
                             };
                         }
                     }
@@ -353,21 +509,21 @@ impl<'a> Lexer<'a> {
             }
             Err(err) => {
                 return match err.coords {
-                    Some(coords) => lexer_error!(err.details, coords),
-                    None => lexer_error!(err.details),
-                }
+                    Some(coords) => wrapped_lexer_error!(err.details, coords),
+                    None => wrapped_lexer_error!(err.details),
+                };
             }
         }
 
         self.parse_numeric(!have_decimal)
     }
 
-    fn check_following_exponent(&mut self) -> ParserResult<()> {
+    fn check_following_exponent(&mut self) -> LexerResult<()> {
         self.advance(false).and_then(|_| {
             return match self.front_char() {
                 match_plus_minus!() => Ok(()),
-                _ => lexer_error!(
-                    ParserErrorDetails::InvalidNumericRepresentation(self.current_string()),
+                _ => wrapped_lexer_error!(
+                    LexerErrorDetails::InvalidNumericRepresentation(self.current_string()),
                     self.absolute_position()
                 ),
             };
@@ -380,7 +536,7 @@ impl<'a> Lexer<'a> {
         integral: bool,
         start_coords: Coords,
         end_coords: Coords,
-    ) -> ParserResult<PackedToken> {
+    ) -> LexerResult<PackedToken> {
         packed_token!(
             Token::Float(fast_float::parse(self.input.buffer_as_bytes()).unwrap()),
             back_input_coords!(),
@@ -389,7 +545,7 @@ impl<'a> Lexer<'a> {
     }
 
     #[cfg(feature = "mixed_numerics")]
-    fn parse_numeric(&mut self, integral: bool) -> ParserResult<PackedToken> {
+    fn parse_numeric(&mut self, integral: bool) -> LexerResult<PackedToken> {
         if integral {
             packed_token!(
                 Token::Integer(lexical::parse(self.input.buffer_as_byte_array()).unwrap()),
@@ -411,7 +567,7 @@ impl<'a> Lexer<'a> {
     /// - A leading minus must be followed by a digit
     /// - A leading minus must be followed by at most one zero before a period
     /// - Any number > zero can't have a leading zero in the representation
-    fn match_valid_number_prefix(&mut self) -> ParserResult<bool> {
+    fn match_valid_number_prefix(&mut self) -> LexerResult<bool> {
         let ch = self.back_char();
         assert!(ch.is_ascii_digit() || ch == '-');
         match ch {
@@ -427,11 +583,12 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn check_following_zero(&mut self) -> ParserResult<bool> {
+    /// Check for valid characters following a zero
+    fn check_following_zero(&mut self) -> LexerResult<bool> {
         match self.front_char() {
             match_period!() => Ok(false),
-            match_digit!() => lexer_error!(
-                ParserErrorDetails::InvalidNumericRepresentation(self.current_string()),
+            match_digit!() => wrapped_lexer_error!(
+                LexerErrorDetails::InvalidNumericRepresentation(self.current_string()),
                 self.back_coords()
             ),
             match_newline!() => {
@@ -445,13 +602,14 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn check_following_minus(&mut self) -> ParserResult<bool> {
+    /// Check for valid characters following a minus character
+    fn check_following_minus(&mut self) -> LexerResult<bool> {
         match self.front_char() {
             match_non_zero_digit!() => Ok(true),
             match_zero!() => self.advance(false).and_then(|_| {
                 if self.front_char() != '.' {
-                    return lexer_error!(
-                        ParserErrorDetails::InvalidNumericRepresentation(self.current_string()),
+                    return wrapped_lexer_error!(
+                        LexerErrorDetails::InvalidNumericRepresentation(self.current_string()),
                         self.back_coords()
                     );
                 }
@@ -461,21 +619,21 @@ impl<'a> Lexer<'a> {
                 self.input.pushback();
                 Ok(true)
             }
-            _ => lexer_error!(
-                ParserErrorDetails::InvalidNumericRepresentation(self.current_string()),
+            _ => wrapped_lexer_error!(
+                LexerErrorDetails::InvalidNumericRepresentation(self.current_string()),
                 self.back_coords()
             ),
         }
     }
 
     /// Match on a null token
-    fn match_null(&mut self) -> ParserResult<PackedToken> {
+    fn match_null(&mut self) -> LexerResult<PackedToken> {
         self.input.advance_n(3, false).and_then(|_| {
             if self.current_chars() == NULL_PATTERN {
                 packed_token!(Token::Null, self.back_coords(), self.front_coords())
             } else {
-                lexer_error!(
-                    ParserErrorDetails::MatchFailed(
+                wrapped_lexer_error!(
+                    LexerErrorDetails::MatchFailed(
                         String::from_iter(NULL_PATTERN.iter()),
                         self.current_string()
                     ),
@@ -486,7 +644,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Match on a true token
-    fn match_true(&mut self) -> ParserResult<PackedToken> {
+    fn match_true(&mut self) -> LexerResult<PackedToken> {
         self.advance_n(3, false).and_then(|_| {
             if self.current_chars() == TRUE_PATTERN {
                 packed_token!(
@@ -495,8 +653,8 @@ impl<'a> Lexer<'a> {
                     self.front_coords()
                 )
             } else {
-                lexer_error!(
-                    ParserErrorDetails::MatchFailed(
+                wrapped_lexer_error!(
+                    LexerErrorDetails::MatchFailed(
                         String::from_iter(TRUE_PATTERN.iter()),
                         self.current_string()
                     ),
@@ -507,7 +665,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Match on a false token
-    fn match_false(&mut self) -> ParserResult<PackedToken> {
+    fn match_false(&mut self) -> LexerResult<PackedToken> {
         self.advance_n(4, false).and_then(|_| {
             if self.current_chars() == FALSE_PATTERN {
                 packed_token!(
@@ -516,8 +674,8 @@ impl<'a> Lexer<'a> {
                     self.front_coords()
                 )
             } else {
-                lexer_error!(
-                    ParserErrorDetails::MatchFailed(
+                wrapped_lexer_error!(
+                    LexerErrorDetails::MatchFailed(
                         String::from_iter(FALSE_PATTERN.iter()),
                         self.current_string()
                     ),
@@ -535,12 +693,12 @@ mod tests {
     use std::io::{BufRead, BufReader};
     use std::time::Instant;
 
+    use chisel_common::{lines_from_relative_file, reader_from_bytes};
     use chisel_common::char::span::Span;
     use chisel_decoders::utf8::Utf8Decoder;
 
-    use crate::lexer::lexer_core::{Lexer, PackedToken, Token};
-    use crate::results::{ParserError, ParserResult};
-    use crate::{lines_from_relative_file, reader_from_bytes};
+    use crate::json::lexer::{Lexer, LexerError, LexerResult};
+    use crate::json::tokens::{PackedToken, Token};
 
     #[test]
     fn should_parse_basic_tokens() {
@@ -680,7 +838,7 @@ mod tests {
                 let mut reader = reader_from_bytes!(l);
                 let mut decoder = Utf8Decoder::new(&mut reader);
                 let mut lexer = Lexer::new(&mut decoder);
-                let mut error_token: Option<ParserError> = None;
+                let mut error_token: Option<LexerError> = None;
                 loop {
                     let token = lexer.consume();
                     match token {
@@ -706,7 +864,7 @@ mod tests {
         let mut reader = reader_from_bytes!("true farse");
         let mut decoder = Utf8Decoder::new(&mut reader);
         let mut lexer = Lexer::new(&mut decoder);
-        let mut results: Vec<ParserResult<PackedToken>> = vec![];
+        let mut results: Vec<LexerResult<PackedToken>> = vec![];
         for _ in 1..=2 {
             results.push(lexer.consume());
         }

@@ -11,6 +11,8 @@ categories = ["text-processing"]
 repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-lexers"
 
 [dependencies]
+fast-float = "0.2.0"
+lexical={version = "6.1.1", features = ["parse-floats", "parse-integers"], optional = true}
 chisel-common = {path = "../chisel-common"}
 chisel-decoders = {path = "../chisel-decoders"}
 
@@ -18,6 +20,10 @@ chisel-decoders = {path = "../chisel-decoders"}
 bytesize = {workspace= true}
 criterion = {workspace = true, features = ["html_reports"]}
 pprof = {workspace = true, features = ["flamegraph", "criterion", "protobuf"]}
+
+[features]
+default = ["mixed_numerics" ]
+mixed_numerics = ["lexical"]
 
 [[bench]]
 name = "scanner"
