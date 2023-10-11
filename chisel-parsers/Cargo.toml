@@ -1,0 +1,31 @@
+[package]
+name = "chisel-parsers"
+version = "1.0.8"
+edition.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Chisel parser front ends"
+license = "MIT OR Apache-2.0"
+keywords = ["parser", "parsing"]
+categories = ["text-processing"]
+repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-parsers"
+
+[dependencies]
+chisel-common = {path = "../chisel-common"}
+chisel-decoders = {path = "../chisel-decoders"}
+chisel-json-pointer = {path = "../chisel-json-pointer"}
+chisel-lexers = {path = "../chisel-lexers"}
+
+[dev-dependencies]
+bytesize = {workspace = true}
+criterion = {workspace = true, features = ["html_reports"]}
+pprof = {workspace = true, features = ["flamegraph", "criterion", "protobuf"]}
+
+[[bench]]
+name = "dom_parsing"
+harness = false
+
+
+[[bench]]
+name = "sax_parsing"
+harness = false

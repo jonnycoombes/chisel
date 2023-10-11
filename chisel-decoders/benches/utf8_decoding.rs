@@ -1,8 +1,10 @@
-use chisel_decoders::utf8::Utf8Decoder;
-use criterion::{criterion_group, criterion_main, Criterion};
-use pprof::criterion::{Output, PProfProfiler};
 use std::fs::File;
 use std::io::BufReader;
+
+use criterion::{criterion_group, criterion_main, Criterion};
+use pprof::criterion::{Output, PProfProfiler};
+
+use chisel_decoders::utf8::Utf8Decoder;
 
 macro_rules! build_decode_benchmark {
     ($func : tt, $filename : expr) => {

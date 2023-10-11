@@ -127,6 +127,7 @@ impl<'a, Buffer: BufRead> Utf8Decoder<'a, Buffer> {
         }
     }
 
+    /// Initialise and read the input into an internal buffer for decoding
     fn init(&mut self) -> DecoderResult<()> {
         match self.input.read_to_end(&mut self.buffer) {
             Ok(_) => {

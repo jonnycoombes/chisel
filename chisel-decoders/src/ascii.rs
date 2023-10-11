@@ -8,7 +8,7 @@ use std::mem::transmute;
 use crate::common::*;
 use crate::decoder_error;
 
-/// An ASCIIdecoder, which takes a ref to a [BufRead] instance.
+/// An ASCII decoder, which takes a ref to a [BufRead] instance.
 pub struct AsciiDecoder<'a, B: BufRead> {
     /// The input stream
     input: &'a mut B,

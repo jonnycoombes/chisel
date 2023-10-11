@@ -1,0 +1,13 @@
+[package]
+name = "chisel-json-pointer"
+version = "1.0.8"
+edition.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Chisel JSON Pointer implementation"
+license = "MIT OR Apache-2.0"
+keywords = ["json", "pointer", "rfc6901"]
+categories = ["parser-implementations", "text-processing"]
+repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-json-pointer"
+
+[dependencies]
