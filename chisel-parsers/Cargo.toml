@@ -11,10 +11,10 @@ categories = ["text-processing"]
 repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-parsers"
 
 [dependencies]
-chisel-common = {path = "../chisel-common"}
-chisel-decoders = {path = "../chisel-decoders"}
-chisel-json-pointer = {path = "../chisel-json-pointer"}
-chisel-lexers = {path = "../chisel-lexers"}
+chisel-common = "1.0.8"
+chisel-decoders = "1.0.8"
+chisel-json-pointer = "1.0.8"
+chisel-lexers = "1.0.8"
 
 [dev-dependencies]
 bytesize = {workspace = true}
