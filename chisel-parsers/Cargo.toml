@@ -1,0 +1,13 @@
+[package]
+name = "chisel-parsers"
+version = "1.0.8"
+edition.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Chisel parser front ends"
+license = "MIT OR Apache-2.0"
+keywords = ["parser", "parsing"]
+categories = ["text-processing"]
+repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-parsers"
+
+[dependencies]

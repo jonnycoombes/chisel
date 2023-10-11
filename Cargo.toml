@@ -3,7 +3,9 @@ members = [
 	"chisel-json",
 	"chisel-json-pointer", 
 	"chisel-decoders",
-	"chisel-common"]
+	"chisel-common",
+	"chisel-lexers",
+	"chisel-parsers"]
 resolver="2"
 
 [workspace.package]

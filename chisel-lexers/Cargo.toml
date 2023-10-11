@@ -1,0 +1,13 @@
+[package]
+name = "chisel-lexers"
+version = "1.0.8"
+edition.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Chisel backend lexers/scanners"
+license = "MIT OR Apache-2.0"
+keywords = ["lexer", "parsing"]
+categories = ["text-processing"]
+repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-lexers"
+
+[dependencies]
