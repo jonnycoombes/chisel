@@ -533,16 +533,11 @@ impl<'a> Lexer<'a> {
     }
 
     #[cfg(not(feature = "mixed_numerics"))]
-    fn parse_numeric(
-        &mut self,
-        integral: bool,
-        start_coords: Coords,
-        end_coords: Coords,
-    ) -> LexerResult<PackedToken> {
+    fn parse_numeric(&mut self, integral: bool) -> LexerResult<PackedToken> {
         packed_token!(
-            Token::Float(fast_float::parse(self.input.buffer_as_bytes()).unwrap()),
-            back_input_coords!(),
-            front_input_coords!()
+            Token::Float(fast_float::parse(self.input.buffer_as_byte_array()).unwrap()),
+            self.back_coords(),
+            self.front_coords()
         )
     }
 
