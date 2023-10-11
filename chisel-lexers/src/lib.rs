@@ -1,4 +1,4 @@
 /// JSON lexical analysis and token generation
 pub mod json;
-/// Common scanner logic
+/// LA(1) scanner implementation
 pub mod scanner;

@@ -55,13 +55,13 @@ macro_rules! scanner_error {
     };
 }
 
-/// Aggregate structure consisting of a character and it's position within the input stream
+/// A [char] and a [Coord] providing positional information
 pub struct CharWithCoords {
     pub ch: char,
     pub coords: Coords,
 }
 
-/// A tuple consisting of a string-like thing, and associated span
+/// A [String] along with the [Span] it occupies in the input
 pub struct StringWithSpan {
     pub str: String,
     pub span: Span,
@@ -77,8 +77,9 @@ macro_rules! clone_char_with_coords {
     };
 }
 
-/// Structure to manage input state information for the lexer.  Allows for an absolute position as well as a sliding
-/// buffer of (as of yet) unconsumed entries
+/// Simple LA(1) scanner which wraps itself around a source of [char]s and converts raw characters
+/// into [CharWithCoords] structures. Also provides a running buffer which can be used to accumulate
+/// input characters, prior to extracting them and tokenising them.
 #[derive()]
 pub struct Scanner<'a> {
     /// Single lookahead character
@@ -100,7 +101,7 @@ pub struct Scanner<'a> {
 /// An input adapter used by the lexer. A [Scanner] is responsible for managing input
 /// state to to provide access to segments (or individual characters) from within the source input.
 impl<'a> Scanner<'a> {
-    /// Create a new state instance with all the defaults
+    /// New instance, based on an [Iterator] of [char]
     pub fn new(chars: &'a mut dyn Iterator<Item = char>) -> Self {
         Scanner {
             lookahead: None,
@@ -111,7 +112,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    /// Reset the state without resetting the state of the underlying char iterator
+    /// Reset the internal state of the scanner, without resetting the state of the underlying char iterator
     pub fn clear(&mut self) {
         self.buffer = vec![];
     }
@@ -129,7 +130,7 @@ impl<'a> Scanner<'a> {
         self.position.clone()
     }
 
-    /// Get the optional [char] at the front of the buffer
+    /// Get the optional [char] at the front of the scanner buffer
     pub fn front(&self) -> Option<CharWithCoords> {
         return if !self.buffer.is_empty() {
             Some(clone_char_with_coords!(self.buffer.last().unwrap()))
@@ -138,7 +139,7 @@ impl<'a> Scanner<'a> {
         };
     }
 
-    /// Get the optional [char] at the back of the buffer
+    /// Get the optional [char] at the back of the scanner buffer
     pub fn back(&self) -> Option<CharWithCoords> {
         return if !self.buffer.is_empty() {
             Some(clone_char_with_coords!(self.buffer.first().unwrap()))
@@ -147,7 +148,7 @@ impl<'a> Scanner<'a> {
         };
     }
 
-    /// Advance the input to the next available character, optionally skipping whitespace.
+    /// Advance the scanner to the next available character, optionally skipping whitespace.
     pub fn advance(&mut self, skip_whitespace: bool) -> ScannerResult<()> {
         // skip any whitespace, which may populate pushback or lookahead
         if skip_whitespace {
@@ -179,7 +180,7 @@ impl<'a> Scanner<'a> {
         };
     }
 
-    /// Look ahead one in the input stream
+    /// Try and look ahead one [char] in the input stream
     pub fn try_lookahead(&mut self) -> Option<char> {
         self.lookahead = self.chars.next();
         self.lookahead
@@ -264,7 +265,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    /// Advance the input over n available characters, returning a [ParserError] if it's not
+    /// Advance the scanner over n available characters, returning a [ScannerError] if it's not
     /// possible to do so. After calling this method the input state should be read using the
     /// other associated functions available for this type
     pub fn advance_n(&mut self, n: usize, skip_whitespace: bool) -> ScannerResult<()> {
@@ -296,7 +297,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    /// Extract the current buffer as a [StringWithSpan]. Will return an empty string if there's
+    /// Extract the scanner buffer as a [StringWithSpan]. Will return an empty string if there's
     /// nothing in the buffer
     pub fn buffer_as_string_with_span(&mut self) -> StringWithSpan {
         return if !self.buffer.is_empty() {
@@ -320,7 +321,7 @@ impl<'a> Scanner<'a> {
         };
     }
 
-    /// Extract the current buffer as a [char] slice
+    /// Extract the scanner buffer as a [char] slice
     pub fn buffer_as_char_array(&mut self) -> Vec<char> {
         return if !self.buffer.is_empty() {
             let mut arr: Vec<char> = vec![];
@@ -331,7 +332,7 @@ impl<'a> Scanner<'a> {
         };
     }
 
-    /// Extract the current buffer as a byte buffer.  You just get an empty vec if the buffer is
+    /// Extract the scanner buffer as a byte buffer.  You just get an empty vec if the buffer is
     /// currently empty
     pub fn buffer_as_byte_array(&self) -> Vec<u8> {
         return if !self.buffer.is_empty() {
