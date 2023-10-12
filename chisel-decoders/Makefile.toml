@@ -19,3 +19,11 @@ dependencies = []
 [tasks.test-release]
 command = "cargo"
 args = ["test", "--release"]
+
+[tasks.bench_ascii_decoding]
+command = "cargo"
+args = ["bench", "--bench", "ascii_decoding"]
+
+[tasks.bench_utf8_decoding]
+command = "cargo"
+args = ["bench", "--bench", "utf8_decoding"]
