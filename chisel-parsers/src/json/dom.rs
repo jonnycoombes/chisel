@@ -6,13 +6,12 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
-use chisel_decoders::{default_decoder, Encoding, new_decoder};
+use chisel_decoders::{default_decoder, new_decoder, Encoding};
 use chisel_lexers::json::lexer::Lexer;
 use chisel_lexers::json::tokens::Token;
 
-use crate::json::{JsonKeyValue, JsonValue, ParserResult};
-use crate::json::{ParserError, ParserErrorDetails};
-use crate::parser_error;
+use crate::json::{JsonKeyValue, JsonValue};
+use crate::{parser_error, ParserError, ParserErrorDetails, ParserResult};
 
 /// Main JSON parser struct
 pub struct Parser {
@@ -87,7 +86,10 @@ impl Parser {
             (Token::Boolean(value), _) => Ok(JsonValue::Boolean(value)),
             (Token::Null, _) => Ok(JsonValue::Null),
             (token, span) => {
-                parser_error!(ParserErrorDetails::UnexpectedToken(token), span.start)
+                parser_error!(
+                    ParserErrorDetails::UnexpectedToken(token.to_string()),
+                    span.start
+                )
             }
         }
     }
@@ -147,16 +149,16 @@ impl Parser {
 mod tests {
     #![allow(unused_macros)]
 
-    use std::{env, fs};
     use std::path::PathBuf;
     use std::time::Instant;
+    use std::{env, fs};
 
     use bytesize::ByteSize;
 
     use chisel_common::relative_file;
 
     use crate::json::dom::Parser;
-    use crate::json::ParserErrorDetails;
+    use crate::ParserErrorDetails;
 
     #[test]
     fn should_parse_char_iterators_directly() {

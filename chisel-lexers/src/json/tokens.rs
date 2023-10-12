@@ -1,5 +1,5 @@
-use std::fmt::{Display, Formatter};
 use chisel_common::char::span::Span;
+use std::fmt::{Display, Formatter};
 
 /// Enumeration of generated JSON tokens
 #[derive(Debug, Clone, PartialEq)]
@@ -39,4 +39,3 @@ impl Display for Token {
 
 /// A packed token consists of a [Token] and the [Span] associated with it
 pub type PackedToken<'a> = (Token, Span);
-
