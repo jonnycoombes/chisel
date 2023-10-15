@@ -1,18 +1,30 @@
 # chisel-lexers
 
-
-
 [![Workflow Status](https://img.shields.io/github/actions/workflow/status/jonnycoombes/chisel-core/rust.yml)](https://img.shields.io/github/actions/workflow/status/jonnycoombes/chisel-core/rust.yml)
 
 [![crates.io](https://img.shields.io/crates/v/chisel-lexers.svg)](https://crates.io/crates/chisel-lexers)
 
 [![crates.io](https://img.shields.io/crates/l/chisel-lexers.svg)](https://crates.io/crates/chisel-lexers)
 
+This crate contains a lexical analysis backend for JSON-related parsers.
 
+The core struct within this crate is the [Lexer], which once constructed, can be used to consume
+individual [Token] instances from a given input stream.
 
 ## Building and Testing
 
-As you would expect, just `cargo build` in order to build the crate.
+| What               | Command       |
+|--------------------|---------------|
+| Build crate        | `cargo build` |
+| Test crate         | `cargo test`  |
+| Run all benchmarks | `cargo bench` |
+
+This crate comes contains two specific benchmarks which may be run in isolation:
+
+| Description                           | Command                          |
+|---------------------------------------|----------------------------------|
+| JSON lexing (tokenisation) benchmarks | `cargo bench --bench json_lexer` |
+| Scanning (char munching) benchmarks   | `cargo bench --bench scanner`    |
 
 ## Suggestions and Requests
 

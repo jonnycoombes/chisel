@@ -10,7 +10,18 @@
 
 ## Building and Testing
 
-As you would expect, just `cargo build` in order to build the crate.
+| What               | Command       |
+|--------------------|---------------|
+| Build crate        | `cargo build` |
+| Test crate         | `cargo test`  |
+| Run all benchmarks | `cargo bench` |
+
+This crate comes contains two specific benchmarks which may be run in isolation:
+
+| Description                           | Command                          |
+|---------------------------------------|----------------------------------|
+| JSON lexing (tokenisation) benchmarks | `cargo bench --bench json_lexer` |
+| Scanning (char munching) benchmarks   | `cargo bench --bench scanner`    |
 
 ## Suggestions and Requests
 
