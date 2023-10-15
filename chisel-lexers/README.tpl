@@ -1,6 +1,6 @@
-# chisel-lexers
+# {{crate}}
 
-
+{{readme}}
 
 [![Workflow Status](https://img.shields.io/github/actions/workflow/status/jonnycoombes/chisel-core/rust.yml)](https://img.shields.io/github/actions/workflow/status/jonnycoombes/chisel-core/rust.yml)
 
@@ -8,7 +8,7 @@
 
 [![crates.io](https://img.shields.io/crates/l/chisel-lexers.svg)](https://crates.io/crates/chisel-lexers)
 
-
+{{readme}}
 
 ## Building and Testing
 

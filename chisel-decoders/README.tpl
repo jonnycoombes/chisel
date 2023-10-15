@@ -1,7 +1,8 @@
-
 # {{crate}}
 
-[![Rust](https://github.com/jonnycoombes/chisel-decoders/actions/workflows/rust.yml/badge.svg)](https://github.com/jonnycoombes/chisel-decoders/actions/workflows/rust.yml)
+{{readme}}
+
+[![Workflow Status](https://img.shields.io/github/actions/workflow/status/jonnycoombes/chisel-core/rust.yml)](https://img.shields.io/github/actions/workflow/status/jonnycoombes/chisel-core/rust.yml)
 
 [![crates.io](https://img.shields.io/crates/v/chisel-decoders.svg)](https://crates.io/crates/chisel-decoders)
 
