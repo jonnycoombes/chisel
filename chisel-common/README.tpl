@@ -3,9 +3,9 @@
 
 [![Workflow Status](https://img.shields.io/github/actions/workflow/status/jonnycoombes/chisel-core/rust.yml)](https://img.shields.io/github/actions/workflow/status/jonnycoombes/chisel-core/rust.yml)
 
-[![crates.io](https://img.shields.io/crates/v/chisel-json-pointer.svg)](https://crates.io/crates/chisel-json-pointer)
+[![crates.io](https://img.shields.io/crates/v/chisel-common.svg)](https://crates.io/crates/chisel-common)
 
-[![crates.io](https://img.shields.io/crates/l/chisel-json-pointer.svg)](https://crates.io/crates/chisel-json-pointer)
+[![crates.io](https://img.shields.io/crates/l/chisel-common.svg)](https://crates.io/crates/chisel-common)
 
 {{readme}}
 

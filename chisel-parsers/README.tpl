@@ -1,7 +1,5 @@
 # {{crate}}
 
-{{readme}}
-
 [![Workflow Status](https://img.shields.io/github/actions/workflow/status/jonnycoombes/chisel-core/rust.yml)](https://img.shields.io/github/actions/workflow/status/jonnycoombes/chisel-core/rust.yml)
 
 [![crates.io](https://img.shields.io/crates/v/chisel-parsers.svg)](https://crates.io/crates/chisel-parsers)
@@ -9,6 +7,7 @@
 [![crates.io](https://img.shields.io/crates/l/chisel-parsers.svg)](https://crates.io/crates/chisel-parsers)
 
 {{readme}}
+
 
 ## Building and Testing
 
