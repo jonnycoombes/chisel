@@ -1,13 +1,10 @@
 
 [![Workflow Status](https://img.shields.io/github/actions/workflow/status/jonnycoombes/chisel-core/rust.yml)](https://img.shields.io/github/actions/workflow/status/jonnycoombes/chisel-core/rust.yml)
 
-[![Downloads](https://img.shields.io/crates/d/chisel-parsers)](https://img.shields.io/crates/d/chisel-parsers)
+# {{crate}}
 
+{{readme}}
 
-# chisel-parsers
+Current version: {{version}}
 
-
-
-Current version: 1.0.8
-
-License: MIT OR Apache-2.0
+License: {{license}}

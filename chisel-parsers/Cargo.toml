@@ -29,3 +29,6 @@ harness = false
 [[bench]]
 name = "sax_parsing"
 harness = false
+
+[badges]
+github = { repository = "jonnycoombes/chisel-core" }
