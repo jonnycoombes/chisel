@@ -1,4 +1,4 @@
-/// JSON lexical analysis and token generation
+//! This crate contains a lexical analysis backend for JSON-related parsers.
+
 pub mod json;
-/// LA(1) scanner implementation
 pub mod scanner;
