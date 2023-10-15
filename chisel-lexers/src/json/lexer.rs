@@ -144,14 +144,12 @@ macro_rules! lexer_error {
     };
 }
 
-/// Default lookahead buffer size
-const DEFAULT_BUFFER_SIZE: usize = 4096;
 /// Pattern to match for null
 const NULL_PATTERN: [char; 4] = ['n', 'u', 'l', 'l'];
 /// Pattern to match for true
 const TRUE_PATTERN: [char; 4] = ['t', 'r', 'u', 'e'];
 /// Pattern to match for false
-const FALSE_PATTERN: [char; 5] = ['f', 'a', 'l', 's', 'e'];
+const FALSE_PATTERN: [char; 5] = ['f','a' ,'l' ,'s' ,'e' ];
 
 macro_rules! packed_token {
     ($t:expr, $s:expr, $e:expr) => {
@@ -646,7 +644,7 @@ impl<'a> Lexer<'a> {
                 } else {
                     wrapped_lexer_error!(
                         LexerErrorDetails::MatchFailed(
-                            String::from_iter(NULL_PATTERN.iter()),
+                            String::from("null"),
                             self.current_string()
                         ),
                         self.back_coords()
@@ -658,7 +656,9 @@ impl<'a> Lexer<'a> {
     /// Match on a true token
     #[inline]
     fn match_true(&mut self) -> LexerResult<PackedToken> {
-        self.advance_n(3, false).and_then(|_| {
+        self.advance_n(3, false)
+            .map_err(|e| lexer_error!(LexerErrorDetails::EndOfInput, self.absolute_position()))
+            .and_then(|_| {
             if self.current_chars() == TRUE_PATTERN {
                 packed_token!(
                     Token::Boolean(true),
@@ -668,7 +668,7 @@ impl<'a> Lexer<'a> {
             } else {
                 wrapped_lexer_error!(
                     LexerErrorDetails::MatchFailed(
-                        String::from_iter(TRUE_PATTERN.iter()),
+                        String::from("true"),
                         self.current_string()
                     ),
                     self.back_coords()
@@ -680,7 +680,9 @@ impl<'a> Lexer<'a> {
     /// Match on a false token
     #[inline]
     fn match_false(&mut self) -> LexerResult<PackedToken> {
-        self.advance_n(4, false).and_then(|_| {
+        self.advance_n(4, false)
+            .map_err(|e| lexer_error!(LexerErrorDetails::EndOfInput, self.absolute_position()))
+            .and_then(|_| {
             if self.current_chars() == FALSE_PATTERN {
                 packed_token!(
                     Token::Boolean(false),
@@ -690,7 +692,7 @@ impl<'a> Lexer<'a> {
             } else {
                 wrapped_lexer_error!(
                     LexerErrorDetails::MatchFailed(
-                        String::from_iter(FALSE_PATTERN.iter()),
+                        String::from("false"),
                         self.current_string()
                     ),
                     self.back_coords()
