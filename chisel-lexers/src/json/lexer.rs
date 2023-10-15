@@ -369,6 +369,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Match on a valid Json string.
+    #[inline]
     fn match_string(&mut self) -> LexerResult<PackedToken> {
         loop {
             match self.advance(false) {
@@ -406,6 +407,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Check for a valid unicode escape sequence of the form '\uXXXX'
+    #[inline]
     fn check_unicode_sequence(&mut self) -> LexerResult<()> {
         let start_position = self.absolute_position();
         for i in 1..=4 {
@@ -439,6 +441,7 @@ impl<'a> Lexer<'a> {
     /// - Exponents must be well-formed
     /// - An non-exponent alphabetic found in the representation will result in an error
     /// - Numbers can be terminated by commas, brackets and whitespace only (end of pair, end of array)
+    #[inline]
     fn match_number(&mut self) -> LexerResult<PackedToken> {
         let mut have_exponent = false;
         let mut have_decimal = false;
@@ -520,6 +523,7 @@ impl<'a> Lexer<'a> {
         self.parse_numeric(!have_decimal)
     }
 
+    #[inline]
     fn check_following_exponent(&mut self) -> LexerResult<()> {
         self.advance(false).and_then(|_| {
             return match self.front_char() {
@@ -533,6 +537,7 @@ impl<'a> Lexer<'a> {
     }
 
     #[cfg(not(feature = "mixed_numerics"))]
+    #[inline]
     fn parse_numeric(&mut self, integral: bool) -> LexerResult<PackedToken> {
         packed_token!(
             Token::Float(fast_float::parse(self.input.buffer_as_byte_array()).unwrap()),
@@ -542,6 +547,7 @@ impl<'a> Lexer<'a> {
     }
 
     #[cfg(feature = "mixed_numerics")]
+    #[inline]
     fn parse_numeric(&mut self, integral: bool) -> LexerResult<PackedToken> {
         if integral {
             packed_token!(
@@ -564,6 +570,7 @@ impl<'a> Lexer<'a> {
     /// - A leading minus must be followed by a digit
     /// - A leading minus must be followed by at most one zero before a period
     /// - Any number > zero can't have a leading zero in the representation
+    #[inline]
     fn match_valid_number_prefix(&mut self) -> LexerResult<bool> {
         let ch = self.back_char();
         assert!(ch.is_ascii_digit() || ch == '-');
@@ -583,6 +590,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Check for valid characters following a zero
+    #[inline]
     fn check_following_zero(&mut self) -> LexerResult<bool> {
         match self.front_char() {
             match_period!() => Ok(false),
@@ -602,6 +610,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Check for valid characters following a minus character
+    #[inline]
     fn check_following_minus(&mut self) -> LexerResult<bool> {
         match self.front_char() {
             match_non_zero_digit!() => Ok(true),
@@ -626,6 +635,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Match on a null token
+    #[inline]
     fn match_null(&mut self) -> LexerResult<PackedToken> {
         self.input
             .advance_n(3, false)
@@ -646,6 +656,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Match on a true token
+    #[inline]
     fn match_true(&mut self) -> LexerResult<PackedToken> {
         self.advance_n(3, false).and_then(|_| {
             if self.current_chars() == TRUE_PATTERN {
@@ -667,6 +678,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Match on a false token
+    #[inline]
     fn match_false(&mut self) -> LexerResult<PackedToken> {
         self.advance_n(4, false).and_then(|_| {
             if self.current_chars() == FALSE_PATTERN {
