@@ -1,21 +1,21 @@
 //! Implementation of an LA(1) scanner backend.
-//! 
+//!
 //! # Usage
-//! 
+//!
 //! Usage of the scanner is pretty straightforward. Construct an instance based on a supplied
-//! decoder (which is responsible for decoding byte streams into streams of UTF8 characters), 
-//! and then use the [Scanner::advance] and [Scanner::advance_n] functions to move through the 
+//! decoder (which is responsible for decoding byte streams into streams of UTF8 characters),
+//! and then use the [Scanner::advance] and [Scanner::advance_n] functions to move through the
 //! underlying input and populate the internal scanner buffer.
 //!
-//! To look into the scanner buffer, the [Scanner::front] and [Scanner::back] functions allow 
+//! To look into the scanner buffer, the [Scanner::front] and [Scanner::back] functions allow
 //! access to the first and last elements.  To grab the entire contents of the buffer, functions
 //! such as [Scanner::buffer_as_char_array] may be used.
 //!
-//! Once a chunk of input has been processed, the scanner state (i.e. the buffer) can be reset 
-//! with a call to [Scanner::clear]. 
-//! 
+//! Once a chunk of input has been processed, the scanner state (i.e. the buffer) can be reset
+//! with a call to [Scanner::clear].
+//!
 //! # Examples
-//! 
+//!
 //! ```rust
 //!  use std::io::BufReader;
 //!  use chisel_common::reader_from_bytes;
@@ -29,11 +29,11 @@
 //!  let mut scanner = Scanner::new(&mut decoder);
 //!  
 //! // consume from the scanner...
-//! let first = scanner.advance(true); 
-//! assert!(first.is_ok()); 
+//! let first = scanner.advance(true);
+//! assert!(first.is_ok());
 //! assert_eq!(scanner.front().unwrap().ch, 'l');
 //! assert_eq!(scanner.front().unwrap().coords.column, 1);
-//! 
+//!
 //! // reset the scanner state
 //! scanner.clear();
 //!

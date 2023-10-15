@@ -8,9 +8,6 @@
 
 This crate contains a lexical analysis backend for JSON-related parsers.
 
-The core struct within this crate is the [Lexer], which once constructed, can be used to consume
-individual [Token] instances from a given input stream.
-
 ## Building and Testing
 
 | What               | Command       |
