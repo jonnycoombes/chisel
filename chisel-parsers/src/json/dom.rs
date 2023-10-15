@@ -76,6 +76,7 @@ impl Parser {
         }
     }
 
+    #[inline]
     fn parse_value(&self, lexer: &mut Lexer) -> ParserResult<JsonValue> {
         match lexer.consume()? {
             (Token::StartObject, _) => self.parse_object(lexer),

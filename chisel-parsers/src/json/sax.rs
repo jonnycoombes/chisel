@@ -135,6 +135,7 @@ impl Parser {
         }
     }
 
+    #[inline]
     fn parse_value<Callback>(
         &self,
         lexer: &mut Lexer,
