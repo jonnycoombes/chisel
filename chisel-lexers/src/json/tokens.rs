@@ -4,17 +4,29 @@ use std::fmt::{Display, Formatter};
 /// Enumeration of generated JSON tokens
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
+    /// Start of a JSON object
     StartObject,
+    /// End of a JSON object
     EndObject,
+    /// Start of a JSON array
     StartArray,
+    /// End of a JSON array
     EndArray,
+    /// A colon (KV separator)
     Colon,
+    /// A lowly comma
     Comma,
+    /// A string value
     Str(String),
+    /// A float value
     Float(f64),
+    /// An integral value
     Integer(i64),
+    /// A null value
     Null,
+    /// A boolean value (true/false)
     Boolean(bool),
+    /// The end of input token
     EndOfInput,
 }
 
