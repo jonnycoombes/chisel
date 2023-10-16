@@ -148,7 +148,6 @@ macro_rules! lexer_error {
 const NULL_ASCII: [u8; 4] = [0x6e, 0x75, 0x6c, 0x6c];
 /// Pattern to match for true
 const TRUE_ASCII: [u8; 4] = [0x74, 0x72, 0x75, 0x65];
-
 /// Pattern to match for false
 const FALSE_ASCII: [u8; 5] = [0x66, 0x61, 0x6c, 0x73, 0x65];
 
@@ -328,7 +327,7 @@ impl<'a> Lexer<'a> {
         self.input.buffer_as_byte_array()
     }
 
-    /// Consume the next [Token] from the input
+    /// Consume the next [Token] from the input and add it to the internal buffer
     pub fn consume(&mut self) -> LexerResult<PackedToken> {
         self.input.clear();
         match self.advance(true) {
@@ -535,6 +534,8 @@ impl<'a> Lexer<'a> {
         })
     }
 
+    /// If the mixed numerics feature isn't enabled, then just parse everything numeric as a
+    /// floating point number and only emit floating point numeric tokens
     #[cfg(not(feature = "mixed_numerics"))]
     #[inline]
     fn parse_numeric(&mut self, integral: bool) -> LexerResult<PackedToken> {
@@ -545,6 +546,8 @@ impl<'a> Lexer<'a> {
         )
     }
 
+    /// If the mixed numeric feature is enabled, then we detect whether we have an integral or
+    /// floating point value, and parse differently (and emit different tokens) for each
     #[cfg(feature = "mixed_numerics")]
     #[inline]
     fn parse_numeric(&mut self, integral: bool) -> LexerResult<PackedToken> {
