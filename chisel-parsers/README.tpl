@@ -1,14 +1,12 @@
-# chisel-json-pointer
-
+# {{crate}}
 
 [![Workflow Status](https://img.shields.io/github/actions/workflow/status/jonnycoombes/chisel-core/rust.yml)](https://img.shields.io/github/actions/workflow/status/jonnycoombes/chisel-core/rust.yml)
 
-[![crates.io](https://img.shields.io/crates/v/chisel-json-pointer.svg)](https://crates.io/crates/chisel-json-pointer)
+[![crates.io](https://img.shields.io/crates/v/chisel-parsers.svg)](https://crates.io/crates/chisel-parsers)
 
-[![crates.io](https://img.shields.io/crates/l/chisel-json-pointer.svg)](https://crates.io/crates/chisel-json-pointer)
+[![crates.io](https://img.shields.io/crates/l/chisel-parsers.svg)](https://crates.io/crates/chisel-parsers)
 
-A representation of a JSON Pointer with associated operations, as per RFC 6901
-
+{{readme}}
 
 
 ## Building and Testing

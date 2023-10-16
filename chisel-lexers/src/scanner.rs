@@ -1,9 +1,49 @@
+//! Implementation of an LA(1) scanner backend.
+//!
+//! # Usage
+//!
+//! Usage of the scanner is pretty straightforward. Construct an instance based on a supplied
+//! decoder (which is responsible for decoding byte streams into streams of UTF8 characters),
+//! and then use the [Scanner::advance] and [Scanner::advance_n] functions to move through the
+//! underlying input and populate the internal scanner buffer.
+//!
+//! To look into the scanner buffer, the [Scanner::front] and [Scanner::back] functions allow
+//! access to the first and last elements.  To grab the entire contents of the buffer, functions
+//! such as [Scanner::buffer_as_char_array] may be used.
+//!
+//! Once a chunk of input has been processed, the scanner state (i.e. the buffer) can be reset
+//! with a call to [Scanner::clear].
+//!
+//! # Examples
+//!
+//! ```rust
+//!  use std::io::BufReader;
+//!  use chisel_common::reader_from_bytes;
+//!  use chisel_decoders::utf8::Utf8Decoder;
+//!  use chisel_lexers::scanner::Scanner;
+//!
+//!  // construct a new scanner instance, based on a decoded byte source
+//!  let buffer: &[u8] = "let goodly sin and sunshine in".as_bytes();
+//!  let mut reader = BufReader::new(buffer);
+//!  let mut decoder = Utf8Decoder::new(&mut reader);
+//!  let mut scanner = Scanner::new(&mut decoder);
+//!  
+//! // consume from the scanner...
+//! let first = scanner.advance(true);
+//! assert!(first.is_ok());
+//! assert_eq!(scanner.front().unwrap().ch, 'l');
+//! assert_eq!(scanner.front().unwrap().coords.column, 1);
+//!
+//! // reset the scanner state
+//! scanner.clear();
+//!
+//! ```
 #![allow(dead_code)]
 use chisel_common::char::coords::Coords;
 use chisel_common::char::span::Span;
 use std::fmt::{Display, Formatter};
 
-/// General result type for the scanner
+/// Result type for the scanner
 pub type ScannerResult<T> = Result<T, ScannerError>;
 
 /// An enumeration of possible faults
@@ -78,8 +118,8 @@ macro_rules! clone_char_with_coords {
 }
 
 /// Simple LA(1) scanner which wraps itself around a source of [char]s and converts raw characters
-/// into [CharWithCoords] structures. Also provides a running buffer which can be used to accumulate
-/// input characters, prior to extracting them and tokenising them.
+/// into [CharWithCoords] structures. Provides a running buffer which can be used to accumulate
+/// input characters, prior to extracting them for further downstream processing.
 #[derive()]
 pub struct Scanner<'a> {
     /// Single lookahead character
