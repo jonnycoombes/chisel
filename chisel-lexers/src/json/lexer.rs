@@ -145,11 +145,12 @@ macro_rules! lexer_error {
 }
 
 /// Pattern to match for null
-const NULL_PATTERN: [char; 4] = ['n', 'u', 'l', 'l'];
+const NULL_ASCII: [u8; 4] = [0x6e, 0x75, 0x6c, 0x6c];
 /// Pattern to match for true
-const TRUE_PATTERN: [char; 4] = ['t', 'r', 'u', 'e'];
+const TRUE_ASCII: [u8; 4] = [0x74, 0x72, 0x75, 0x65];
+
 /// Pattern to match for false
-const FALSE_PATTERN: [char; 5] = ['f','a' ,'l' ,'s' ,'e' ];
+const FALSE_ASCII: [u8; 5] = [0x66, 0x61, 0x6c, 0x73, 0x65];
 
 macro_rules! packed_token {
     ($t:expr, $s:expr, $e:expr) => {
@@ -639,14 +640,11 @@ impl<'a> Lexer<'a> {
             .advance_n(3, false)
             .map_err(|e| lexer_error!(LexerErrorDetails::EndOfInput, self.absolute_position()))
             .and_then(|_| {
-                if self.current_chars() == NULL_PATTERN {
+                if self.current_bytes() == NULL_ASCII {
                     packed_token!(Token::Null, self.back_coords(), self.front_coords())
                 } else {
                     wrapped_lexer_error!(
-                        LexerErrorDetails::MatchFailed(
-                            String::from("null"),
-                            self.current_string()
-                        ),
+                        LexerErrorDetails::MatchFailed(String::from("null"), self.current_string()),
                         self.back_coords()
                     )
                 }
@@ -659,22 +657,19 @@ impl<'a> Lexer<'a> {
         self.advance_n(3, false)
             .map_err(|e| lexer_error!(LexerErrorDetails::EndOfInput, self.absolute_position()))
             .and_then(|_| {
-            if self.current_chars() == TRUE_PATTERN {
-                packed_token!(
-                    Token::Boolean(true),
-                    self.back_coords(),
-                    self.front_coords()
-                )
-            } else {
-                wrapped_lexer_error!(
-                    LexerErrorDetails::MatchFailed(
-                        String::from("true"),
-                        self.current_string()
-                    ),
-                    self.back_coords()
-                )
-            }
-        })
+                if self.current_bytes() == TRUE_ASCII {
+                    packed_token!(
+                        Token::Boolean(true),
+                        self.back_coords(),
+                        self.front_coords()
+                    )
+                } else {
+                    wrapped_lexer_error!(
+                        LexerErrorDetails::MatchFailed(String::from("true"), self.current_string()),
+                        self.back_coords()
+                    )
+                }
+            })
     }
 
     /// Match on a false token
@@ -683,22 +678,22 @@ impl<'a> Lexer<'a> {
         self.advance_n(4, false)
             .map_err(|e| lexer_error!(LexerErrorDetails::EndOfInput, self.absolute_position()))
             .and_then(|_| {
-            if self.current_chars() == FALSE_PATTERN {
-                packed_token!(
-                    Token::Boolean(false),
-                    self.back_coords(),
-                    self.front_coords()
-                )
-            } else {
-                wrapped_lexer_error!(
-                    LexerErrorDetails::MatchFailed(
-                        String::from("false"),
-                        self.current_string()
-                    ),
-                    self.back_coords()
-                )
-            }
-        })
+                if self.current_bytes() == FALSE_ASCII {
+                    packed_token!(
+                        Token::Boolean(false),
+                        self.back_coords(),
+                        self.front_coords()
+                    )
+                } else {
+                    wrapped_lexer_error!(
+                        LexerErrorDetails::MatchFailed(
+                            String::from("false"),
+                            self.current_string()
+                        ),
+                        self.back_coords()
+                    )
+                }
+            })
     }
 }
 
