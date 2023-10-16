@@ -1,6 +1,6 @@
 [package]
 name = "chisel-parsers"
-version = "1.0.8"
+version = "1.0.9"
 edition.workspace = true
 authors.workspace = true
 rust-version.workspace = true
@@ -14,7 +14,7 @@ repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-pars
 chisel-common = "1.0.8"
 chisel-decoders = "1.0.8"
 chisel-json-pointer = "1.0.8"
-chisel-lexers = "1.0.10"
+chisel-lexers = "1.0.11"
 
 [dev-dependencies]
 bytesize = {workspace = true}
