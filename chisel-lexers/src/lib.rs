@@ -16,31 +16,80 @@
 //! tokens only).
 //!
 //! ## Scanning the input
-//! The scanner operates through maintaining an internal state:
+//! The scanner operates through maintaining a simple internal state:
 //!
-//! - A transient buffer of characters, paired with their coordinates in the input
-//! - A transient pushback buffer, which can be used to temporarily push characters back into the input
-//! - A single lookahead character which can be used for LA(1) operations by a lexer  
 //! - A current position in the input
-//! - A source of `char`s (typically a byte decoder of some description)
+//! - An input buffer used to control pushbacks and lookaheads
+//! - An accumulation buffer for gathering up characters
 //!
-//! At any point, a lexer can take a look at the front and the back of the buffer in order to decide
-//! whether to either *advance*, *pushback* or *lookahead*:
+//! A lexer simply pulls characters through the scanner (which adds positional information to each
+//! one) and gathers them up within the accumulation buffer until it sees something that triggers
+//! the parse of a valid token.
 //!
-//! - *advance*  - add another character to the scanning buffer
-//! - *pushback* - take the last read character from the buffer and add to the pushback buffer
-//! - *lookahead* - read one character from the input, but don't add it to the buffer (yet)
+//! Once the lexer is ready to consume all the content in the accumulation buffer, functions are
+//! provided to extract the contents of the buffer in a number of formats (e.g. a string or char
+//! array) and to then clear the buffer without resetting all the internal scanner state.
 //!
-//! If a fault occurs during any of these operations, the scanner returns a `Err` containing
-//! information about the nature of the fault and the location in the input where it occurred.
+//! A simple example of using the scanner is shown below:
+//! ```rust
+//!  use std::io::BufReader;
+//!  use chisel_common::reader_from_bytes;
+//!  use chisel_decoders::utf8::Utf8Decoder;
+//!  use chisel_lexers::scanner::Scanner;
 //!
-//! After several advances, pushbacks lookaheads, a lexer can retrieve the contents of the buffer
-//! in order to form a new token.
+//!  // construct a new scanner instance, based on a decoded byte source
+//!  let buffer: &[u8] = "let goodly sin and sunshine in".as_bytes();
+//!  let mut reader = BufReader::new(buffer);
+//!  let mut decoder = Utf8Decoder::new(&mut reader);
+//!  let mut scanner = Scanner::new(&mut decoder);
+//!  
+//! // consume the first character from the scanner...
+//! let first = scanner.advance(true);
+//! assert!(first.is_ok());
+//! assert_eq!(scanner.front().unwrap().ch, 'l');
+//! assert_eq!(scanner.front().unwrap().coords.column, 1);
+//!
+//! // consume a second character
+//! assert!(scanner.advance(true).is_ok());
+//!
+//! // ...and then pushback onto the buffer
+//! scanner.pushback();
+//!
+//! // front of the buffer should still be 'l'
+//! assert_eq!(scanner.front().unwrap().ch, 'l');
+//!
+//! // advance again - this time char will be taken from the pushback buffer
+//! let _ = scanner.advance(true);
+//! assert_eq!(scanner.front().unwrap().ch, 'e');
+//!
+//! // grab the contents of the buffer as a string
+//! let buffer_contents= scanner.buffer_as_string_with_span();
+//! assert_eq!(buffer_contents.str, String::from("le"));
+//!
+//! // reset the scanner and empty the buffer
+//! scanner.clear();
+//!
+//! // buffer should now be empty
+//! assert!(scanner.buffer_as_string_with_span().str.is_empty());
+//!
+//! // advance yet again
+//! assert!(scanner.advance(true).is_ok());
+//!
+//! // the third character read will be from the 3rd column in the input
+//! assert_eq!(scanner.front().unwrap().ch, 't');
+//! assert_eq!(scanner.front().unwrap().coords.column, 3);
+//!
+//!
+//! ```
 //!
 //! ## Lexers
 //!
+//! Within the current release, only a single lexer backend is implemented within this crate:
+//!
 //! ### JSON Lexer
 //!
+//!
+
 //!
 
 pub mod json;
