@@ -794,6 +794,7 @@ mod tests {
             results.push(lexer.consume())
         }
         assert!(&results[3].is_err());
+        let error = results[3].clone();
         let coords = results[3].clone().err().unwrap().coords.unwrap();
         assert_eq!(coords.absolute, 11);
         assert_eq!(coords.line, 2)
