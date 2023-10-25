@@ -117,25 +117,39 @@ macro_rules! clone_char_with_coords {
     };
 }
 
-/// Simple LA(1) scanner which wraps itself around a source of [char]s and converts raw characters
+/// Shorthand for the creation of a [CharWithCoords]
+macro_rules! char_with_coords {
+    ($ch : expr, $col : expr, $line : expr, $abs : expr) => {
+        CharWithCoords {
+            ch: $ch,
+            coords: Coords {
+                column: $col,
+                line: $line,
+                absolute: $abs,
+            },
+        }
+    };
+}
+
+/// Simple scanner which wraps itself around a source of [char]s and converts raw characters
 /// into [CharWithCoords] structures. Provides a running buffer which can be used to accumulate
 /// input characters, prior to extracting them for further downstream processing.
 #[derive()]
 pub struct Scanner<'a> {
-    /// Single lookahead character
-    lookahead: Option<char>,
-
     /// The underlying source of characters
-    chars: &'a mut dyn Iterator<Item = char>,
+    source: &'a mut dyn Iterator<Item = char>,
 
-    /// The absolute [Coords]
-    position: Coords,
+    /// Accumulation buffer
+    accumulator: Vec<CharWithCoords>,
 
     /// Input buffer
     buffer: Vec<CharWithCoords>,
 
-    /// Pushback buffer
-    pushbacks: Vec<CharWithCoords>,
+    /// Overall position
+    position: Coords,
+
+    /// Newline flag in order ensure correct position reporting
+    newline: bool,
 }
 
 /// An input adapter used by the lexer. A [Scanner] is responsible for managing input
@@ -144,36 +158,40 @@ impl<'a> Scanner<'a> {
     /// New instance, based on an [Iterator] of [char]
     pub fn new(chars: &'a mut dyn Iterator<Item = char>) -> Self {
         Scanner {
-            lookahead: None,
-            chars,
-            position: Coords::default(),
+            source: chars,
+            accumulator: vec![],
             buffer: vec![],
-            pushbacks: vec![],
+            position: Coords {
+                column: 0,
+                line: 1,
+                absolute: 0,
+            },
+            newline: false,
         }
     }
 
     /// Reset the internal state of the scanner, without resetting the state of the underlying char iterator
     pub fn clear(&mut self) {
-        self.buffer = vec![];
+        self.accumulator = vec![];
     }
 
-    /// Push the last read character (and it's coords) onto the pushback buffer
+    /// Push the last read character (and it's coords) onto the pushback buffer. Noop if there's
+    /// currently nothing in the accumulator
     pub fn pushback(&mut self) {
-        if !self.buffer.is_empty() {
-            let last = self.buffer.remove(self.buffer.len() - 1);
-            self.pushbacks.push(last);
+        if !self.accumulator.is_empty() {
+            self.buffer.push(self.accumulator.pop().unwrap())
         }
     }
 
     /// Get the absolute position in the underlying input
     pub fn position(&self) -> Coords {
-        self.position.clone()
+        self.position
     }
 
     /// Get the optional [char] at the front of the scanner buffer
     pub fn front(&self) -> Option<CharWithCoords> {
-        return if !self.buffer.is_empty() {
-            Some(clone_char_with_coords!(self.buffer.last().unwrap()))
+        return if !self.accumulator.is_empty() {
+            Some(clone_char_with_coords!(self.accumulator.last().unwrap()))
         } else {
             None
         };
@@ -181,8 +199,8 @@ impl<'a> Scanner<'a> {
 
     /// Get the optional [char] at the back of the scanner buffer
     pub fn back(&self) -> Option<CharWithCoords> {
-        return if !self.buffer.is_empty() {
-            Some(clone_char_with_coords!(self.buffer.first().unwrap()))
+        return if !self.accumulator.is_empty() {
+            Some(clone_char_with_coords!(self.accumulator.first().unwrap()))
         } else {
             None
         };
@@ -190,119 +208,84 @@ impl<'a> Scanner<'a> {
 
     /// Advance the scanner to the next available character, optionally skipping whitespace.
     pub fn advance(&mut self, skip_whitespace: bool) -> ScannerResult<()> {
-        // skip any whitespace, which may populate pushback or lookahead
-        if skip_whitespace {
-            self.skip_whitespace()?;
-        }
+        loop {
+            match self.next() {
+                Some(cwc) => {
+                    // update overall position
+                    self.position = cwc.coords;
 
-        // check that we haven't pushed back during whitespace skipping
-        if !self.pushbacks.is_empty() {
-            self.buffer.push(self.pushbacks.pop().unwrap());
-            self.position = self.buffer.last().unwrap().coords;
-            return Ok(());
-        }
-
-        // otherwise, just grab the next available character from either the underlying input,
-        // or from the lookahead buffer
-        return match self.next_char() {
-            Some(next) => {
-                self.inc_position(false);
-                match next {
-                    (ch, Some(coords)) => self.buffer.push(CharWithCoords { ch, coords }),
-                    (ch, None) => self.buffer.push(CharWithCoords {
-                        ch,
-                        coords: self.position,
-                    }),
+                    // check for whitespace
+                    if skip_whitespace {
+                        if !cwc.ch.is_whitespace() {
+                            self.accumulator.push(cwc);
+                            return Ok(());
+                        }
+                    } else {
+                        self.accumulator.push(cwc);
+                        return Ok(());
+                    }
                 }
-                Ok(())
+                None => return scanner_error!(ScannerErrorDetails::EndOfInput),
             }
-            None => scanner_error!(ScannerErrorDetails::EndOfInput, self.position),
-        };
+        }
     }
 
     /// Try and look ahead one [char] in the input stream
-    pub fn try_lookahead(&mut self) -> Option<char> {
-        self.lookahead = self.chars.next();
-        self.lookahead
+    pub fn try_lookahead(&mut self) -> Option<&CharWithCoords> {
+        return if !self.buffer.is_empty() {
+            self.buffer.last()
+        } else {
+            match self.next() {
+                Some(cwc) => {
+                    self.buffer.push(cwc);
+                    self.buffer.last()
+                }
+                None => None,
+            }
+        };
     }
 
-    /// Clear the lookahead
-    fn clear_lookahead(&mut self) {
-        self.lookahead = None;
-    }
-
-    /// Skip any whitespace within the input, making sure to update our overall position in the
-    /// input correctly. As we skip whitespace, we may "overrun" and so need to populate the
-    /// pushback buffer, or alternatively in the case of line endings, we may need to populate
-    /// the lookahead with a character.  Populating the pushback buffer should update coordinate
-    /// information, populating the lookahead will not
-    fn skip_whitespace(&mut self) -> ScannerResult<()> {
-        loop {
-            let next = self.next_char();
-            match next {
-                Some((ch, _)) => match ch.is_whitespace() {
-                    true => match ch {
-                        '\r' => {
-                            self.inc_position(true);
-                            match self.try_lookahead() {
-                                Some(la) => match la {
-                                    '\n' => {
-                                        self.inc_position(false);
-                                        self.clear_lookahead();
-                                    }
-                                    _ => {
-                                        self.inc_position(false);
-                                        self.pushbacks.push(CharWithCoords {
-                                            ch: la,
-                                            coords: self.position,
-                                        })
-                                    }
-                                },
-                                None => {
-                                    return scanner_error!(
-                                        ScannerErrorDetails::EndOfInput,
-                                        self.position
-                                    );
-                                }
-                            }
-                        }
-                        '\n' => self.inc_position(true),
-                        _ => self.inc_position(false),
-                    },
-                    false => {
-                        self.inc_position(false);
-                        self.pushbacks.push(CharWithCoords {
+    /// Grab the next available character and update the current position if we retrieve a new
+    /// character from the underlying input
+    fn next(&mut self) -> Option<CharWithCoords> {
+        // early return from the buffer if possible
+        return if !self.buffer.is_empty() {
+            Some(self.buffer.pop().unwrap())
+        } else {
+            // check next character and adjust position taking into account line endings
+            match self.source.next() {
+                Some(ch) => match ch {
+                    '\n' => {
+                        self.newline = true;
+                        Some(char_with_coords!(
                             ch,
-                            coords: self.position,
-                        });
-                        return Ok(());
+                            self.position.column + 1,
+                            self.position.line,
+                            self.position.absolute + 1
+                        ))
+                    }
+                    _ => {
+                        if self.newline {
+                            self.newline = false;
+                            Some(char_with_coords!(
+                                ch,
+                                1,
+                                self.position.line + 1,
+                                self.position.absolute + 1
+                            ))
+                        } else {
+                            Some(char_with_coords!(
+                                ch,
+                                self.position.column + 1,
+                                self.position.line,
+                                self.position.absolute + 1
+                            ))
+                        }
                     }
                 },
-                None => {
-                    return scanner_error!(ScannerErrorDetails::EndOfInput, self.position);
-                }
+                None => None,
             }
-        }
-    }
-
-    /// Grab the next available character, which might come from either the lookahead, or failing
-    /// that, from the underlying input.  Return a tuple consisting of a character, and an optional
-    /// coordinate position, depending on where we managed to source the character from...
-    fn next_char(&mut self) -> Option<(char, Option<Coords>)> {
-        // check to see if we have anything in the pushback buffer
-        if !self.pushbacks.is_empty() {
-            let popped = self.pushbacks.pop().unwrap();
-            return Some((popped.ch, Some(popped.coords)));
-        }
-
-        // grab from the lookahead, or read from the underlying input
-        match self.lookahead {
-            Some(ch) => {
-                self.lookahead = None;
-                Some((ch, None))
-            }
-            None => self.chars.next().map(|ch| (ch, None)),
-        }
+        };
     }
 
     /// Advance the scanner over n available characters, returning a [ScannerError] if it's not
@@ -315,34 +298,12 @@ impl<'a> Scanner<'a> {
         Ok(())
     }
 
-    /// Increment position, optionally resetting at the beginning of a new line
-    fn inc_position(&mut self, newline: bool) {
-        // check whether we're on the very first character
-        if self.position.line == 0 {
-            self.position.line = 1
-        }
-
-        // adjust absolute position
-        self.position.absolute += 1;
-
-        // adjust based on whether we've hit a newline
-        match newline {
-            true => {
-                self.position.column = 0;
-                self.position.line += 1;
-            }
-            false => {
-                self.position.column += 1;
-            }
-        }
-    }
-
     /// Extract the scanner buffer as a [StringWithSpan]. Will return an empty string if there's
     /// nothing in the buffer
     pub fn buffer_as_string_with_span(&mut self) -> StringWithSpan {
-        return if !self.buffer.is_empty() {
-            let mut s = String::with_capacity(self.buffer.len());
-            self.buffer.iter().for_each(|cwc| s.push(cwc.ch));
+        return if !self.accumulator.is_empty() {
+            let mut s = String::with_capacity(self.accumulator.len());
+            self.accumulator.iter().for_each(|cwc| s.push(cwc.ch));
             StringWithSpan {
                 str: s,
                 span: Span {
@@ -363,9 +324,9 @@ impl<'a> Scanner<'a> {
 
     /// Extract the scanner buffer as a [char] slice
     pub fn buffer_as_char_array(&mut self) -> Vec<char> {
-        return if !self.buffer.is_empty() {
+        return if !self.accumulator.is_empty() {
             let mut arr: Vec<char> = vec![];
-            self.buffer.iter().for_each(|cwc| arr.push(cwc.ch));
+            self.accumulator.iter().for_each(|cwc| arr.push(cwc.ch));
             arr
         } else {
             vec![]
@@ -375,8 +336,8 @@ impl<'a> Scanner<'a> {
     /// Extract the scanner buffer as a byte buffer.  You just get an empty vec if the buffer is
     /// currently empty
     pub fn buffer_as_byte_array(&self) -> Vec<u8> {
-        return if !self.buffer.is_empty() {
-            self.buffer.iter().map(|cwc| cwc.ch as u8).collect()
+        return if !self.accumulator.is_empty() {
+            self.accumulator.iter().map(|cwc| cwc.ch as u8).collect()
         } else {
             vec![]
         };
@@ -419,5 +380,50 @@ mod test {
         }
         assert_eq!(input.front().unwrap().ch, ' ');
         assert_eq!(input.front().unwrap().coords.column, 10)
+    }
+
+    #[test]
+    fn should_handle_pushbacks_correctly() {
+        // construct a new scanner instance, based on a decoded byte source
+        let buffer: &[u8] = "let goodly sin and sunshine in".as_bytes();
+        let mut reader = BufReader::new(buffer);
+        let mut decoder = Utf8Decoder::new(&mut reader);
+        let mut scanner = Scanner::new(&mut decoder);
+
+        // consume the first character from the scanner...
+        let first = scanner.advance(true);
+        assert!(first.is_ok());
+        assert_eq!(scanner.front().unwrap().ch, 'l');
+        assert_eq!(scanner.front().unwrap().coords.column, 1);
+
+        // consume a second character
+        assert!(scanner.advance(true).is_ok());
+
+        // ...and then pushback onto the buffer
+        scanner.pushback();
+
+        // front of the buffer should still be 'l'
+        assert_eq!(scanner.front().unwrap().ch, 'l');
+
+        // advance again - this time char will be taken from the pushback buffer
+        let _ = scanner.advance(true);
+        assert_eq!(scanner.front().unwrap().ch, 'e');
+
+        // grab the contents of the buffer as a string
+        let buffer_contents = scanner.buffer_as_string_with_span();
+        assert_eq!(buffer_contents.str, String::from("le"));
+
+        // reset the scanner and empty the buffer
+        scanner.clear();
+
+        // buffer should now be empty
+        assert!(scanner.buffer_as_string_with_span().str.is_empty());
+
+        // advance yet again
+        assert!(scanner.advance(true).is_ok());
+
+        // the third character read will be from the 3rd column in the input
+        assert_eq!(scanner.front().unwrap().ch, 't');
+        assert_eq!(scanner.front().unwrap().coords.column, 3);
     }
 }
