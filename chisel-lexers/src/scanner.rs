@@ -253,29 +253,17 @@ impl<'a> Scanner<'a> {
                 Some(ch) => match ch {
                     '\n' => {
                         self.newline = true;
-                        Some(char_with_coords!(
-                            ch,
-                            self.position.column + 1,
-                            self.position.line,
-                            self.position.absolute + 1
-                        ))
+                        Some(char_with_coords!(ch, self.position.copy_increment()))
                     }
                     _ => {
                         if self.newline {
                             self.newline = false;
                             Some(char_with_coords!(
                                 ch,
-                                1,
-                                self.position.line + 1,
-                                self.position.absolute + 1
+                                self.position.copy_increment_newline()
                             ))
                         } else {
-                            Some(char_with_coords!(
-                                ch,
-                                self.position.column + 1,
-                                self.position.line,
-                                self.position.absolute + 1
-                            ))
+                            Some(char_with_coords!(ch, self.position.copy_increment()))
                         }
                     }
                 },
