@@ -16,7 +16,7 @@ pub struct Coords {
 /// Associated functions for the [Coords] struct
 impl Coords {
     /// Create a new coordinate starting on a specific line
-    fn from_line(line: usize) -> Self {
+    pub fn from_line(line: usize) -> Self {
         Coords {
             absolute: 0,
             line,
@@ -25,24 +25,24 @@ impl Coords {
     }
 
     /// Check whether this coordinate is strictly *before* another coordinate
-    fn is_before(&self, other: &Coords) -> bool {
+    pub fn is_before(&self, other: &Coords) -> bool {
         self < other
     }
 
     /// Check whether this coordinate is strictly *after* another coordinate
-    fn is_after(&self, other: &Coords) -> bool {
+    pub fn is_after(&self, other: &Coords) -> bool {
         self > other
     }
 
     /// Increment the coordinate within the current line
-    fn inc(&mut self) {
+    pub fn inc(&mut self) {
         self.column += 1;
         self.absolute += 1;
     }
 
     /// Increment the coordinates and bump the line number (assumes that the new line will start
     /// in column zero)
-    fn inc_newline(&mut self) {
+    pub fn inc_newline(&mut self) {
         self.column += 0;
         self.line += 1;
         self.absolute += 1;
@@ -50,7 +50,7 @@ impl Coords {
 
     /// Decrement the coordinate within the current line, but panic if we try and decrement
     /// column or absolute below zero
-    fn dec(&mut self) {
+    pub fn dec(&mut self) {
         self.column -= 1;
         self.absolute -= 1;
     }

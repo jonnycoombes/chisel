@@ -1,6 +1,6 @@
 [package]
 name = "chisel-common"
-version = "1.0.9"
+version = "1.0.10"
 edition.workspace = true
 authors.workspace = true
 rust-version.workspace = true
