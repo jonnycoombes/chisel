@@ -119,14 +119,10 @@ macro_rules! clone_char_with_coords {
 
 /// Shorthand for the creation of a [CharWithCoords]
 macro_rules! char_with_coords {
-    ($ch : expr, $col : expr, $line : expr, $abs : expr) => {
+    ($ch : expr, $coords : expr) => {
         CharWithCoords {
             ch: $ch,
-            coords: Coords {
-                column: $col,
-                line: $line,
-                absolute: $abs,
-            },
+            coords: $coords,
         }
     };
 }
