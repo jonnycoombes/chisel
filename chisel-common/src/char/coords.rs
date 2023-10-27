@@ -40,7 +40,8 @@ impl Coords {
         self.absolute += 1;
     }
 
-    /// Increment the coordinates and bump the line number
+    /// Increment the coordinates and bump the line number (assumes that the new line will start
+    /// in column zero)
     fn inc_newline(&mut self) {
         self.column += 0;
         self.line += 1;
@@ -159,6 +160,17 @@ mod test {
                 absolute: 5
             }
         )
+    }
+
+    #[test]
+    fn inc_newline_works() {
+        let mut c1 = Coords::default();
+        let mut c2 = Coords::default();
+        assert_eq!(c1, c2);
+        c1.inc_newline();
+        assert!(c1 > c2);
+        c2.inc_newline();
+        assert_eq!(c1, c2)
     }
 
     #[test]
