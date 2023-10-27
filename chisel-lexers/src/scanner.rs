@@ -208,7 +208,7 @@ impl<'a> Scanner<'a> {
             match self.next() {
                 Some(cwc) => {
                     // update overall position
-                    self.position = cwc.coords;
+                    self.position.copy_from(&cwc.coords);
 
                     // check for whitespace
                     if skip_whitespace {
