@@ -45,9 +45,6 @@ impl Coords {
     fn dec(&mut self) {
         self.column -= 1;
         self.absolute -= 1;
-        if self.column < 0 || self.absolute < 0 {
-            panic!("column out of bounds")
-        }
     }
 }
 
