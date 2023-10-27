@@ -40,6 +40,13 @@ impl Coords {
         self.absolute += 1;
     }
 
+    /// Increment the coordinates and bump the line number
+    fn inc_newline(&mut self) {
+        self.column += 0;
+        self.line += 1;
+        self.absolute += 1;
+    }
+
     /// Decrement the coordinate within the current line, but panic if we try and decrement
     /// column or absolute below zero
     fn dec(&mut self) {
