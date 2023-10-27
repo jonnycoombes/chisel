@@ -119,14 +119,10 @@ macro_rules! clone_char_with_coords {
 
 /// Shorthand for the creation of a [CharWithCoords]
 macro_rules! char_with_coords {
-    ($ch : expr, $col : expr, $line : expr, $abs : expr) => {
+    ($ch : expr, $coords : expr) => {
         CharWithCoords {
             ch: $ch,
-            coords: Coords {
-                column: $col,
-                line: $line,
-                absolute: $abs,
-            },
+            coords: $coords,
         }
     };
 }
@@ -212,7 +208,7 @@ impl<'a> Scanner<'a> {
             match self.next() {
                 Some(cwc) => {
                     // update overall position
-                    self.position = cwc.coords;
+                    self.position.copy_from(&cwc.coords);
 
                     // check for whitespace
                     if skip_whitespace {
@@ -257,29 +253,17 @@ impl<'a> Scanner<'a> {
                 Some(ch) => match ch {
                     '\n' => {
                         self.newline = true;
-                        Some(char_with_coords!(
-                            ch,
-                            self.position.column + 1,
-                            self.position.line,
-                            self.position.absolute + 1
-                        ))
+                        Some(char_with_coords!(ch, self.position.copy_increment()))
                     }
                     _ => {
                         if self.newline {
                             self.newline = false;
                             Some(char_with_coords!(
                                 ch,
-                                1,
-                                self.position.line + 1,
-                                self.position.absolute + 1
+                                self.position.copy_increment_newline()
                             ))
                         } else {
-                            Some(char_with_coords!(
-                                ch,
-                                self.position.column + 1,
-                                self.position.line,
-                                self.position.absolute + 1
-                            ))
+                            Some(char_with_coords!(ch, self.position.copy_increment()))
                         }
                     }
                 },
