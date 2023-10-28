@@ -1,0 +1,4 @@
+{
+  "this is a test" : "something",
+  "invalid bool" : trie
+}

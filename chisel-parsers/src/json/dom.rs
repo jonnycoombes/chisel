@@ -193,17 +193,77 @@ mod tests {
         assert!(parsed.is_ok());
     }
     #[test]
-    fn should_successfully_bail() {
-        let path = relative_file!("fixtures/json/invalid/invalid_1.json");
-        let parser = Parser::default();
-        let parsed = parser.parse_file(&path);
-        println!("Parse result = {:?}", parsed);
-        assert!(parsed.is_err());
-        assert_eq!(
-            parsed.err().unwrap().details,
-            ParserErrorDetails::InvalidRootObject
-        );
+    fn should_successfully_handle_basic_invalid_inputs() {
+        let cases = vec![
+            TestCase::new(
+                "fixtures/json/invalid/invalid_root_object.json",
+                Some(Coords {
+                    line: 1,
+                    column: 1,
+                    absolute: 1,
+                }),
+            ),
+            TestCase::new(
+                "fixtures/json/invalid/invalid_bool_1.json",
+                Some(Coords {
+                    line: 2,
+                    column: 23,
+                    absolute: 1,
+                }),
+            ),
+            TestCase::new(
+                "fixtures/json/invalid/invalid_bool_2.json",
+                Some(Coords {
+                    line: 3,
+                    column: 22,
+                    absolute: 1,
+                }),
+            ),
+            TestCase::new(
+                "fixtures/json/invalid/invalid_bool_3.json",
+                Some(Coords {
+                    line: 3,
+                    column: 35,
+                    absolute: 1,
+                }),
+            ),
+            TestCase::new(
+                "fixtures/json/invalid/invalid_array_1.json",
+                Some(Coords {
+                    line: 2,
+                    column: 22,
+                    absolute: 1,
+                }),
+            ),
+            TestCase::new(
+                "fixtures/json/invalid/invalid_array_2.json",
+                Some(Coords {
+                    line: 2,
+                    column: 33,
+                    absolute: 1,
+                }),
+            ),
+        ];
+
+        for case in cases {
+            let path = relative_file!(case.filename);
+            let parser = Parser::default();
+            let parse_result = parser.parse_file(&path);
+            println!("Parse result = {:?}", parse_result);
+            assert!(&parse_result.is_err());
+
+            let err = parse_result.err().unwrap();
+            match case.coords {
+                Some(coords) => {
+                    let err_coords = Coords::from_coords(&err.coords.unwrap());
+                    assert_eq!(err_coords.line, coords.line);
+                    assert_eq!(err_coords.column, coords.column)
+                }
+                None => {}
+            }
+        }
     }
+
     #[test]
     fn should_parse_basic_test_files() {
         for f in fs::read_dir("fixtures/json/valid").unwrap() {
