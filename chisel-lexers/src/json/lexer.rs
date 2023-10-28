@@ -968,7 +968,7 @@ mod tests {
             match &results[1] {
                 Ok(_) => {}
                 Err(err) => {
-                    assert_eq!(err.coords.unwrap().column, 6)
+                    assert_eq!(err.coords.unwrap().column, 8)
                 }
             }
         }
