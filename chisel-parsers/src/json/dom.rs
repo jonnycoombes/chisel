@@ -15,6 +15,7 @@ use crate::{parser_error, ParserError, ParserErrorDetails, ParserResult};
 
 /// Main JSON parser struct
 pub struct Parser {
+    /// The current encoding
     encoding: Encoding,
 }
 
