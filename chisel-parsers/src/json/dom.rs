@@ -125,24 +125,39 @@ impl Parser {
         }
     }
 
-    /// An array is just a list of comma separated values
+    /// An array is just a list of comma separated values, but we need to do additional checking
+    /// to make sure that we don't have consecutive commas, we do allow for empty arrays etc...
     fn parse_array(&self, lexer: &mut Lexer) -> ParserResult<JsonValue> {
         let mut values: Vec<JsonValue> = vec![];
+        let mut expect_value: bool = true;
         loop {
             match lexer.consume()? {
-                (Token::StartArray, _) => values.push(self.parse_array(lexer)?),
-                (Token::EndArray, _) => return Ok(JsonValue::Array(values)),
+                (Token::StartArray, _) => {
+                    values.push(self.parse_array(lexer)?);
+                }
+                (Token::EndArray, span) => {
+                    return if !expect_value || values.is_empty() {
+                        Ok(JsonValue::Array(values))
+                    } else {
+                        parser_error!(ParserErrorDetails::ValueExpected, span.start)
+                    }
+                }
                 (Token::StartObject, _) => values.push(self.parse_object(lexer)?),
                 (Token::Str(str), _) => values.push(JsonValue::String(Cow::Owned(str))),
                 (Token::Float(value), _) => values.push(JsonValue::Float(value)),
                 (Token::Integer(value), _) => values.push(JsonValue::Integer(value)),
                 (Token::Boolean(value), _) => values.push(JsonValue::Boolean(value)),
                 (Token::Null, _) => values.push(JsonValue::Null),
-                (Token::Comma, _) => (),
+                (Token::Comma, span) => {
+                    if expect_value {
+                        return parser_error!(ParserErrorDetails::ValueExpected, span.start);
+                    }
+                }
                 (_token, span) => {
                     return parser_error!(ParserErrorDetails::InvalidArray, span.start);
                 }
             }
+            expect_value = !expect_value
         }
     }
 }
