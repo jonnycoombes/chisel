@@ -25,6 +25,8 @@ pub enum ParserErrorDetails {
     /// Edge case error condition. This means that something has gone horribly wrong with the
     /// parse.
     UnexpectedToken(String),
+    /// An array value is expected but not detected
+    ValueExpected,
     /// KV pair is expected but not detected.
     PairExpected,
     /// Supplied JSON doesn't have an object or array as a root object.
@@ -57,6 +59,9 @@ impl Display for ParserErrorDetails {
             ParserErrorDetails::NonUtf8InputDetected => write!(f, "non-UTF8 input"),
             ParserErrorDetails::UnexpectedToken(token) => {
                 write!(f, "unexpected token found: {}", token)
+            }
+            ParserErrorDetails::ValueExpected => {
+                write!(f, "value expected, but a comma was found")
             }
             ParserErrorDetails::PairExpected => {
                 write!(f, "pair expected, something else was found")
