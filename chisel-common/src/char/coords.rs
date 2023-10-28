@@ -89,7 +89,7 @@ impl Coords {
     pub fn copy_increment_newline(&self) -> Self {
         Coords {
             line: self.line + 1,
-            column: 0,
+            column: 1,
             absolute: self.absolute + 1,
         }
     }
