@@ -166,16 +166,32 @@ impl Parser {
 mod tests {
     #![allow(unused_macros)]
 
+    use crate::json::dom::Parser;
+    use bytesize::ByteSize;
+    use chisel_common::char::coords::Coords;
+    use chisel_common::relative_file;
     use std::path::PathBuf;
     use std::time::Instant;
     use std::{env, fs};
 
-    use bytesize::ByteSize;
+    /// Struct for defining some test cases
+    #[derive(Debug, Clone)]
+    struct TestCase {
+        /// A filename to parse
+        pub filename: String,
+        /// Optional coordinates
+        pub coords: Option<Coords>,
+    }
 
-    use chisel_common::relative_file;
-
-    use crate::json::dom::Parser;
-    use crate::ParserErrorDetails;
+    impl TestCase {
+        /// Create a new test case
+        pub fn new(filename: &str, coords: Option<Coords>) -> Self {
+            TestCase {
+                filename: String::from(filename),
+                coords,
+            }
+        }
+    }
 
     #[test]
     fn should_parse_char_iterators_directly() {
@@ -256,6 +272,22 @@ mod tests {
                 Some(Coords {
                     line: 2,
                     column: 33,
+                    absolute: 1,
+                }),
+            ),
+            TestCase::new(
+                "fixtures/json/invalid/missing-colon.json",
+                Some(Coords {
+                    line: 530,
+                    column: 5,
+                    absolute: 1,
+                }),
+            ),
+            TestCase::new(
+                "fixtures/json/invalid/unterminated.json",
+                Some(Coords {
+                    line: 719,
+                    column: 24,
                     absolute: 1,
                 }),
             ),
