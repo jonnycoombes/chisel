@@ -15,6 +15,15 @@ pub struct Coords {
 
 /// Associated functions for the [Coords] struct
 impl Coords {
+    /// Create a new coordinate based on a coordinate reference
+    pub fn from_coords(value: &Coords) -> Self {
+        Coords {
+            line: value.line,
+            column: value.column,
+            absolute: value.absolute,
+        }
+    }
+
     /// Create a new coordinate starting on a specific line
     pub fn from_line(line: usize) -> Self {
         Coords {
