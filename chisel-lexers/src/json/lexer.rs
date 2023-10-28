@@ -251,6 +251,25 @@ macro_rules! match_newline {
     };
 }
 
+/// Given a source and target to compare, adjust a starting [Coord] so that it points to
+/// the exact location where they fail to match
+#[inline]
+fn adjusted_error_coords(start_coords: &Coords, source: &[u8], target: &[u8]) -> Coords {
+    let mut err_coords = Coords::from_coords(start_coords);
+    for i in 0..=target.len() {
+        if !source[i].is_ascii_whitespace() {
+            if source[i] != target[i] {
+                break;
+            } else {
+                err_coords.increment();
+            }
+        } else {
+            err_coords.increment();
+        }
+    }
+    err_coords
+}
+
 pub struct Lexer<'a> {
     /// Input coordinate state
     input: Scanner<'a>,
@@ -666,7 +685,11 @@ impl<'a> Lexer<'a> {
                 } else {
                     wrapped_lexer_error!(
                         LexerErrorDetails::MatchFailed(String::from("null"), self.current_string()),
-                        self.back_coords()
+                        adjusted_error_coords(
+                            &self.back_coords(),
+                            &self.current_bytes().as_slice(),
+                            &NULL_ASCII
+                        )
                     )
                 }
             })
@@ -687,7 +710,11 @@ impl<'a> Lexer<'a> {
                 } else {
                     wrapped_lexer_error!(
                         LexerErrorDetails::MatchFailed(String::from("true"), self.current_string()),
-                        self.back_coords()
+                        adjusted_error_coords(
+                            &self.back_coords(),
+                            &self.current_bytes().as_slice(),
+                            &TRUE_ASCII
+                        )
                     )
                 }
             })
@@ -711,7 +738,11 @@ impl<'a> Lexer<'a> {
                             String::from("false"),
                             self.current_string()
                         ),
-                        self.back_coords()
+                        adjusted_error_coords(
+                            &self.back_coords(),
+                            &self.current_bytes().as_slice(),
+                            &FALSE_ASCII
+                        )
                     )
                 }
             })
