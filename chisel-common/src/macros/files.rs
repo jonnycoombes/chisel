@@ -11,9 +11,8 @@ macro_rules! relative_file {
 #[macro_export]
 macro_rules! file_from_relative_path {
     ($f : expr) => {
-        let base = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let path = base.join($f);
-        let f = File::open(path).unwrap();
+        let path = env::current_dir().unwrap().join($f);
+        File::open(path).unwrap();
     };
 }
 
