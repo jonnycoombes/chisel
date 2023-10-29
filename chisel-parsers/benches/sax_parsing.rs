@@ -20,6 +20,8 @@ build_parse_benchmark!(citm_catalog, "citm_catalog");
 build_parse_benchmark!(simple, "simple");
 build_parse_benchmark!(schema, "schema");
 build_parse_benchmark!(colours, "colours");
+build_parse_benchmark!(ms_formatted, "ms-formatted");
+build_parse_benchmark!(ms_minified, "ms-minified");
 
 fn benchmark_citm_catalog(c: &mut Criterion) {
     c.bench_function("SAX parse of citm_catalog", |b| b.iter(citm_catalog));
@@ -44,9 +46,23 @@ fn benchmark_colours(c: &mut Criterion) {
     c.bench_function("SAX parse of colours", |b| b.iter(colours));
 }
 
+fn benchmark_ms_formatted(c: &mut Criterion) {
+    c.bench_function("SAX parse of MS formatted (5Mb)", |b| b.iter(ms_formatted));
+}
+fn benchmark_ms_minified(c: &mut Criterion) {
+    c.bench_function("SAX parse of MS minified (5Mb)", |b| b.iter(ms_minified));
+}
+
 criterion_group! {
     name = sax_benches;
     config = Criterion::default().with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
-    targets = benchmark_citm_catalog, benchmark_twitter, benchmark_canada, benchmark_simple, benchmark_schema, benchmark_colours
+    targets = benchmark_citm_catalog,
+    benchmark_twitter,
+    benchmark_canada,
+    benchmark_simple,
+    benchmark_schema,
+    benchmark_colours,
+    benchmark_ms_formatted,
+    benchmark_ms_minified
 }
 criterion_main!(sax_benches);

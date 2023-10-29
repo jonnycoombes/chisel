@@ -251,6 +251,25 @@ macro_rules! match_newline {
     };
 }
 
+/// Given a source and target to compare, adjust a starting [Coord] so that it points to
+/// the exact location where they fail to match
+#[inline]
+fn adjusted_error_coords(start_coords: &Coords, source: &[u8], target: &[u8]) -> Coords {
+    let mut err_coords = Coords::from_coords(start_coords);
+    for i in 0..=target.len() {
+        if !source[i].is_ascii_whitespace() {
+            if source[i] != target[i] {
+                break;
+            } else {
+                err_coords.increment();
+            }
+        } else {
+            err_coords.increment();
+        }
+    }
+    err_coords
+}
+
 pub struct Lexer<'a> {
     /// Input coordinate state
     input: Scanner<'a>,
@@ -274,31 +293,37 @@ impl<'a> Lexer<'a> {
     }
 
     /// Grab the front character
+    #[inline]
     fn front_char(&self) -> char {
         self.input.front().unwrap().ch
     }
 
     /// Grab the back character
+    #[inline]
     fn back_char(&self) -> char {
         self.input.back().unwrap().ch
     }
 
     /// Grab the front input coordinates
+    #[inline]
     fn front_coords(&self) -> Coords {
         self.input.front().unwrap().coords
     }
 
     /// Grab the back input coordinates
+    #[inline]
     fn back_coords(&self) -> Coords {
         self.input.back().unwrap().coords
     }
 
     /// Grab the current absolute input coordinates
+    #[inline]
     fn absolute_position(&self) -> Coords {
         self.input.position()
     }
 
     /// Advance the input by one
+    #[inline]
     fn advance(&mut self, skip_whitespace: bool) -> LexerResult<()> {
         self.input
             .advance(skip_whitespace)
@@ -313,16 +338,19 @@ impl<'a> Lexer<'a> {
     }
 
     /// Grab the current input string
+    #[inline]
     fn current_string(&mut self) -> String {
         self.input.buffer_as_string_with_span().str
     }
 
     /// Grab the current input character array
+    #[inline]
     fn current_chars(&mut self) -> Vec<char> {
         self.input.buffer_as_char_array()
     }
 
     /// Grab the current input byte array
+    #[inline]
     fn current_bytes(&mut self) -> Vec<u8> {
         self.input.buffer_as_byte_array()
     }
@@ -352,7 +380,9 @@ impl<'a> Lexer<'a> {
                     LexerErrorDetails::InvalidCharacter(ch.clone()),
                     coords.clone()
                 ),
-                None => wrapped_lexer_error!(LexerErrorDetails::EndOfInput),
+                None => {
+                    wrapped_lexer_error!(LexerErrorDetails::EndOfInput, self.absolute_position())
+                }
             },
             Err(err) => match err.details {
                 LexerErrorDetails::EndOfInput => {
@@ -360,7 +390,7 @@ impl<'a> Lexer<'a> {
                 }
                 _ => match err.coords {
                     Some(coords) => wrapped_lexer_error!(err.details, coords),
-                    None => wrapped_lexer_error!(err.details),
+                    None => wrapped_lexer_error!(err.details, self.absolute_position()),
                 },
             },
         }
@@ -399,7 +429,14 @@ impl<'a> Lexer<'a> {
                     }
                     _ => (),
                 },
-                Err(err) => return wrapped_lexer_error!(err.details, err.coords.unwrap()),
+                Err(err) => {
+                    return match err.coords {
+                        Some(_) => {
+                            wrapped_lexer_error!(err.details, err.coords.unwrap())
+                        }
+                        None => wrapped_lexer_error!(err.details, self.absolute_position()),
+                    }
+                }
             }
         }
     }
@@ -648,7 +685,11 @@ impl<'a> Lexer<'a> {
                 } else {
                     wrapped_lexer_error!(
                         LexerErrorDetails::MatchFailed(String::from("null"), self.current_string()),
-                        self.back_coords()
+                        adjusted_error_coords(
+                            &self.back_coords(),
+                            &self.current_bytes().as_slice(),
+                            &NULL_ASCII
+                        )
                     )
                 }
             })
@@ -669,7 +710,11 @@ impl<'a> Lexer<'a> {
                 } else {
                     wrapped_lexer_error!(
                         LexerErrorDetails::MatchFailed(String::from("true"), self.current_string()),
-                        self.back_coords()
+                        adjusted_error_coords(
+                            &self.back_coords(),
+                            &self.current_bytes().as_slice(),
+                            &TRUE_ASCII
+                        )
                     )
                 }
             })
@@ -693,7 +738,11 @@ impl<'a> Lexer<'a> {
                             String::from("false"),
                             self.current_string()
                         ),
-                        self.back_coords()
+                        adjusted_error_coords(
+                            &self.back_coords(),
+                            &self.current_bytes().as_slice(),
+                            &FALSE_ASCII
+                        )
                     )
                 }
             })
@@ -713,6 +762,22 @@ mod tests {
 
     use crate::json::lexer::{Lexer, LexerError, LexerResult};
     use crate::json::tokens::{PackedToken, Token};
+
+    #[test]
+    fn should_report_position_of_eoi() {
+        let input = String::from("\"this is a test");
+        let mut reader = reader_from_bytes!(input);
+        let mut decoder = Utf8Decoder::new(&mut reader);
+        let mut lexer = Lexer::new(&mut decoder);
+        let result = lexer.consume();
+        match result {
+            Err(err) => {
+                assert!(err.coords.is_some());
+                assert_eq!(err.coords.unwrap().column, input.len())
+            }
+            _ => assert!(false),
+        }
+    }
 
     #[test]
     fn should_parse_basic_tokens() {
@@ -903,7 +968,7 @@ mod tests {
             match &results[1] {
                 Ok(_) => {}
                 Err(err) => {
-                    assert_eq!(err.coords.unwrap().column, 6)
+                    assert_eq!(err.coords.unwrap().column, 8)
                 }
             }
         }

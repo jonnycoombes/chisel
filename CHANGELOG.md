@@ -2,6 +2,99 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.10] - 2023-10-29
+
+### Bug Fixes
+
+- Ensure well-formed array structures
+- Removal of unnecessary test
+- Removal of unnecessary test
+- Corrected parse_numeric when mixed numerics not enabled
+
+### Documentation
+
+- Updated changelog
+- Comment change only
+- Minimal documentation about how the scanner works
+- Finished off basic overview of scanning
+- Minimal documentation about how the scanner works
+- Removed mod level comments
+- Minimal documentation about how the scanner works
+- Finished off basic overview of scanning
+- Minimal documentation about how the scanner works
+- Removed mod level comments
+- Minor comment updates
+- Updates
+- Updates
+- Updates
+- Common structure for README.md files
+- Added common/similar README templates
+- Started adding basic tpl files
+
+### Features
+
+- Improvements to correctness of array parsing
+- Adjustment of error coordinates to get more accurate and natural feedback in errors
+- Addition of new error relating to unexpected array parses
+- Changed default column index to 1
+- Added convenience from method
+- Addition of convenience macro
+- Corrected macro
+- Added inc_newline convenience function
+- Implementation of basic ordering and equality
+- Addition of useful associated functions and tests
+- Streamlined scanner implementation
+- Inlining of copy and mod operations
+- Made additional coords AFs public, bounced version number
+- Added inc_newline convenience function
+- Implementation of basic ordering and equality
+- Addition of useful associated functions and tests
+- Streamlined scanner implementation
+- Changed literal string comparisons for null, false, true to byte array comparisons
+
+### Implementation
+
+- Inlining hints
+- Removed some unwanted constants, ensured that map_err was happening for boolean matches
+- Added inlining for most match functions
+
+### Refactor
+
+- Moved list of invalid test specifications to separate specs module
+- Removed
+- Simplification of macros
+- Lifted `ParserResult` up to top level of the crate
+
+### Testing
+
+- Added MS 5Mb minified and formatted benchmarks
+- Formatting changes to make testing easier
+- Addition of new test cases
+- New fixtures
+- Adjustment of test result check
+- Addition of fixture
+- Addition of specific tests
+- Addition of EOI test, to check that coordinates are reported correctly
+- Simple test around inc_newline
+- Simple test around inc_newline
+
+### Bench
+
+- 5Mb stress tests added to benchmarks for DOM parser
+
+### Merge
+
+- Stale dev branch
+
+### Opt
+
+- Use of copy/creation funcs
+- Inline mutation of values
+
+### Tmp
+
+- Relative crate references
+
 ## [1.0.8] - 2023-10-11
 
 ### Continuous Integration
@@ -11,6 +104,7 @@ All notable changes to this project will be documented in this file.
 
 ### Documentation
 
+- Updated changelog
 - Added ci category to commit prefixes
 - Removed workspace-specific changelog
 
