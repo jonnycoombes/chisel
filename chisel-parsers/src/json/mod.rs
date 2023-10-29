@@ -6,6 +6,8 @@ pub mod dom;
 pub mod events;
 /// The JSON SAX parser
 pub mod sax;
+#[cfg(test)]
+pub(crate) mod specs;
 
 /// Structure representing a JSON key value pair
 #[derive(Debug)]
