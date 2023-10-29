@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [1.0.10] - 2023-10-29
 
 ### Bug Fixes
 
@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 
 ### Documentation
 
+- Updated changelog
 - Comment change only
 - Minimal documentation about how the scanner works
 - Finished off basic overview of scanning
