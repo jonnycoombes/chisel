@@ -229,6 +229,8 @@ impl Parser {
         Callback: FnMut(&Event) -> ParserResult<()>,
     {
         let mut index = 0;
+        let mut expect_value: bool = true;
+        let mut first_pass = true;
         loop {
             pointer.push_index(index);
             match lexer.consume()? {
@@ -237,8 +239,12 @@ impl Parser {
                     self.parse_array(lexer, pointer, cb)?;
                 }
                 (Token::EndArray, span) => {
-                    pointer.pop();
-                    return emit_event!(cb, Match::EndArray, span, pointer);
+                    return if !expect_value || first_pass {
+                        pointer.pop();
+                        emit_event!(cb, Match::EndArray, span, pointer)
+                    } else {
+                        parser_error!(ParserErrorDetails::ValueExpected, span.start)
+                    }
                 }
                 (Token::StartObject, span) => {
                     emit_event!(cb, Match::StartObject, span, pointer)?;
@@ -257,11 +263,19 @@ impl Parser {
                     emit_event!(cb, Match::Boolean(value), span, pointer)?;
                 }
                 (Token::Null, span) => emit_event!(cb, Match::Null, span, pointer)?,
-                (Token::Comma, _) => index += 1,
+                (Token::Comma, span) => {
+                    if !expect_value {
+                        index += 1
+                    } else {
+                        return parser_error!(ParserErrorDetails::ValueExpected, span.start);
+                    }
+                }
                 (_token, span) => {
                     return parser_error!(ParserErrorDetails::InvalidArray, span.start);
                 }
             }
+            first_pass = false;
+            expect_value = !expect_value;
             pointer.pop();
         }
     }
@@ -275,10 +289,12 @@ mod tests {
     use std::{env, fs};
 
     use bytesize::ByteSize;
+    use chisel_common::char::coords::Coords;
 
     use chisel_common::relative_file;
 
     use crate::json::sax::Parser;
+    use crate::json::specs;
     use crate::ParserErrorDetails;
 
     #[test]
@@ -307,16 +323,23 @@ mod tests {
     }
 
     #[test]
-    fn should_successfully_bail() {
-        let path = relative_file!("fixtures/json/invalid/invalid_1.json");
-        let parser = Parser::default();
-        let parsed = parser.parse_file(&path, &mut |_e| Ok(()));
-        println!("Parse result = {:?}", parsed);
-        assert!(parsed.is_err());
-        assert_eq!(
-            parsed.err().unwrap().details,
-            ParserErrorDetails::InvalidRootObject
-        );
+    fn should_successfully_handle_basic_invalid_inputs() {
+        for spec in specs::invalid_json_specs() {
+            let mut counter = 0;
+            let path = relative_file!(spec.filename);
+            let parser = Parser::default();
+            let parse_result = parser.parse_file(&path, &mut |_e| {
+                counter += 1;
+                Ok(())
+            });
+            println!("Parse result = {:?}", parse_result);
+            assert!(&parse_result.is_err());
+
+            let err = parse_result.err().unwrap();
+            let err_coords = Coords::from_coords(&err.coords.unwrap());
+            assert_eq!(err_coords.line, spec.expected.coords.line);
+            assert_eq!(err_coords.column, spec.expected.coords.column)
+        }
     }
 
     #[test]

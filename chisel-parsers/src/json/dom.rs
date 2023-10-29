@@ -165,33 +165,14 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     #![allow(unused_macros)]
-
     use crate::json::dom::Parser;
+    use crate::json::specs;
     use bytesize::ByteSize;
     use chisel_common::char::coords::Coords;
     use chisel_common::relative_file;
     use std::path::PathBuf;
     use std::time::Instant;
     use std::{env, fs};
-
-    /// Struct for defining some test cases
-    #[derive(Debug, Clone)]
-    struct TestCase {
-        /// A filename to parse
-        pub filename: String,
-        /// Optional coordinates
-        pub coords: Option<Coords>,
-    }
-
-    impl TestCase {
-        /// Create a new test case
-        pub fn new(filename: &str, coords: Option<Coords>) -> Self {
-            TestCase {
-                filename: String::from(filename),
-                coords,
-            }
-        }
-    }
 
     #[test]
     fn should_parse_char_iterators_directly() {
@@ -226,89 +207,16 @@ mod tests {
     }
     #[test]
     fn should_successfully_handle_basic_invalid_inputs() {
-        let cases = vec![
-            TestCase::new(
-                "fixtures/json/invalid/invalid_root_object.json",
-                Some(Coords {
-                    line: 1,
-                    column: 1,
-                    absolute: 1,
-                }),
-            ),
-            TestCase::new(
-                "fixtures/json/invalid/invalid_bool_1.json",
-                Some(Coords {
-                    line: 2,
-                    column: 23,
-                    absolute: 1,
-                }),
-            ),
-            TestCase::new(
-                "fixtures/json/invalid/invalid_bool_2.json",
-                Some(Coords {
-                    line: 3,
-                    column: 22,
-                    absolute: 1,
-                }),
-            ),
-            TestCase::new(
-                "fixtures/json/invalid/invalid_bool_3.json",
-                Some(Coords {
-                    line: 3,
-                    column: 35,
-                    absolute: 1,
-                }),
-            ),
-            TestCase::new(
-                "fixtures/json/invalid/invalid_array_1.json",
-                Some(Coords {
-                    line: 2,
-                    column: 22,
-                    absolute: 1,
-                }),
-            ),
-            TestCase::new(
-                "fixtures/json/invalid/invalid_array_2.json",
-                Some(Coords {
-                    line: 2,
-                    column: 33,
-                    absolute: 1,
-                }),
-            ),
-            TestCase::new(
-                "fixtures/json/invalid/missing-colon.json",
-                Some(Coords {
-                    line: 530,
-                    column: 5,
-                    absolute: 1,
-                }),
-            ),
-            TestCase::new(
-                "fixtures/json/invalid/unterminated.json",
-                Some(Coords {
-                    line: 719,
-                    column: 24,
-                    absolute: 1,
-                }),
-            ),
-        ];
-
-        for case in cases {
-            let path = relative_file!(case.filename);
+        for spec in specs::invalid_json_specs() {
+            let path = relative_file!(spec.filename);
             let parser = Parser::default();
             let parse_result = parser.parse_file(&path);
             println!("Parse result = {:?}", parse_result);
             assert!(&parse_result.is_err());
-
             let err = parse_result.err().unwrap();
-            match case.coords {
-                Some(coords) => {
-                    let err_coords = Coords::from_coords(&err.coords.unwrap());
-                    assert_eq!(err_coords.line, coords.line);
-                    assert_eq!(err_coords.column, coords.column)
-                }
-                None => {}
-            }
+            let err_coords = Coords::from_coords(&err.coords.unwrap());
+            assert_eq!(err_coords.line, spec.expected.coords.line);
+            assert_eq!(err_coords.column, spec.expected.coords.column)
         }
     }
 
