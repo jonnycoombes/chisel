@@ -157,6 +157,9 @@ impl Parser {
             (Token::Str(str), span) => {
                 emit_event!(cb, Match::String(Cow::Borrowed(&str)), span, pointer)
             }
+            (Token::LazyNumeric(value), span) => {
+                emit_event!(cb, Match::Numeric(value), span, pointer)
+            }
             (Token::Float(value), span) => {
                 emit_event!(cb, Match::Float(value), span, pointer)
             }
@@ -252,6 +255,9 @@ impl Parser {
                 }
                 (Token::Str(str), span) => {
                     emit_event!(cb, Match::String(Cow::Borrowed(&str)), span, pointer)?;
+                }
+                (Token::LazyNumeric(value), span) => {
+                    emit_event!(cb, Match::Numeric(value), span, pointer)?;
                 }
                 (Token::Float(value), span) => {
                     emit_event!(cb, Match::Float(value), span, pointer)?;

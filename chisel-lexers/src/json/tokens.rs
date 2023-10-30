@@ -1,3 +1,4 @@
+use crate::json::numerics::LazyNumeric;
 use chisel_common::char::span::Span;
 use std::fmt::{Display, Formatter};
 
@@ -22,6 +23,8 @@ pub enum Token {
     Float(f64),
     /// An integral value
     Integer(i64),
+    /// A lazy numeric value
+    LazyNumeric(LazyNumeric),
     /// A null value
     Null,
     /// A boolean value (true/false)
@@ -42,6 +45,10 @@ impl Display for Token {
             Token::Str(str) => write!(f, "String(\"{}\")", str),
             Token::Float(num) => write!(f, "Float({})", num),
             Token::Integer(num) => write!(f, "Integer({})", num),
+            Token::LazyNumeric(lazy) => {
+                let value: f64 = lazy.into();
+                write!(f, "Lazy({})", value)
+            }
             Token::Null => write!(f, "Null"),
             Token::Boolean(bool) => write!(f, "Boolean({})", bool),
             Token::EndOfInput => write!(f, "EndOfInput"),
