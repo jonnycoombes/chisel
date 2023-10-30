@@ -1,6 +1,6 @@
 [package]
 name = "chisel-lexers"
-version = "1.0.13"
+version = "1.1.0"
 edition.workspace = true
 authors.workspace = true
 rust-version.workspace = true
@@ -13,8 +13,8 @@ repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-lexe
 [dependencies]
 fast-float = "0.2.0"
 lexical={version = "6.1.1", features = ["parse-integers"]}
-chisel-common = "1.0.12" 
-chisel-decoders = "1.0.8"
+chisel-common = "1.1.0" 
+chisel-decoders = "1.1.0"
 
 [dev-dependencies]
 bytesize = {workspace= true}
