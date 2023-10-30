@@ -1,6 +1,6 @@
 [package]
 name = "chisel-parsers"
-version = "1.0.10"
+version = "1.1.0"
 edition.workspace = true
 authors.workspace = true
 rust-version.workspace = true
@@ -11,10 +11,10 @@ categories = ["text-processing"]
 repository = "https://github.com/jonnycoombes/chisel-core/tree/trunk/chisel-parsers"
 
 [dependencies]
-chisel-common = "1.0.12" 
-chisel-decoders = "1.0.8"
-chisel-json-pointer = "1.0.8"
-chisel-lexers = {path = "../chisel-lexers"} 
+chisel-common = "1.1.0" 
+chisel-decoders = "1.1.0"
+chisel-json-pointer = "1.1.0"
+chisel-lexers = "1.1.0"  
 
 [features]
 default=["chisel-lexers/default"]
