@@ -6,6 +6,7 @@ use std::fmt::Display;
 
 use chisel_common::char::span::Span;
 use chisel_json_pointer::JsonPointer;
+use chisel_lexers::json::numerics::LazyNumeric;
 
 /// Enumeration of the various different matches that can be produced during a parse
 #[derive(PartialEq)]
@@ -30,6 +31,8 @@ pub enum Match<'a> {
     Integer(i64),
     /// Emitted when a float is matched
     Float(f64),
+    /// Emitted when a lazily evaluated numeric is matched
+    Numeric(LazyNumeric),
     /// Emitted when a boolean is matched
     Boolean(bool),
     /// Emitted when a null is matched
@@ -49,6 +52,10 @@ impl<'a> Display for Match<'a> {
             Match::String(value) => write!(f, "String({})", value),
             Match::Integer(value) => write!(f, "Integer({})", value),
             Match::Float(value) => write!(f, "Float({})", value),
+            Match::Numeric(value) => {
+                let fval: f64 = value.into();
+                write!(f, "Lazy({})", fval)
+            }
             Match::Boolean(b) => write!(f, "Boolean({})", b),
             Match::Null => write!(f, "Null"),
         }
