@@ -10,7 +10,7 @@ use chisel_decoders::{default_decoder, new_decoder, Encoding};
 use chisel_lexers::json::lexer::Lexer;
 use chisel_lexers::json::tokens::Token;
 
-use crate::json::{JsonKeyValue, JsonValue};
+use crate::json::{JsonKeyValue, JsonNumeric, JsonValue};
 use crate::{parser_error, ParserError, ParserErrorDetails, ParserResult};
 
 /// Main JSON parser struct
@@ -83,8 +83,9 @@ impl Parser {
             (Token::StartObject, _) => self.parse_object(lexer),
             (Token::StartArray, _) => self.parse_array(lexer),
             (Token::Str(str), _) => Ok(JsonValue::String(Cow::Owned(str))),
-            (Token::Float(value), _) => Ok(JsonValue::Float(value)),
-            (Token::Integer(value), _) => Ok(JsonValue::Integer(value)),
+            (Token::LazyNumeric(value), _) => Ok(JsonValue::Number(JsonNumeric::Lazy(value))),
+            (Token::Float(value), _) => Ok(JsonValue::Number(JsonNumeric::Float(value))),
+            (Token::Integer(value), _) => Ok(JsonValue::Number(JsonNumeric::Integer(value))),
             (Token::Boolean(value), _) => Ok(JsonValue::Boolean(value)),
             (Token::Null, _) => Ok(JsonValue::Null),
             (token, span) => {
@@ -144,8 +145,15 @@ impl Parser {
                 }
                 (Token::StartObject, _) => values.push(self.parse_object(lexer)?),
                 (Token::Str(str), _) => values.push(JsonValue::String(Cow::Owned(str))),
-                (Token::Float(value), _) => values.push(JsonValue::Float(value)),
-                (Token::Integer(value), _) => values.push(JsonValue::Integer(value)),
+                (Token::LazyNumeric(value), _) => {
+                    values.push(JsonValue::Number(JsonNumeric::Lazy(value)))
+                }
+                (Token::Float(value), _) => {
+                    values.push(JsonValue::Number(JsonNumeric::Float(value)))
+                }
+                (Token::Integer(value), _) => {
+                    values.push(JsonValue::Number(JsonNumeric::Integer(value)))
+                }
                 (Token::Boolean(value), _) => values.push(JsonValue::Boolean(value)),
                 (Token::Null, _) => values.push(JsonValue::Null),
                 (Token::Comma, span) => {

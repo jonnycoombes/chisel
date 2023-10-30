@@ -6,6 +6,7 @@
 
 use std::fmt::{Display, Formatter};
 
+use crate::json::numerics::LazyNumeric;
 use chisel_common::char::coords::Coords;
 use chisel_common::char::span::Span;
 
@@ -571,21 +572,9 @@ impl<'a> Lexer<'a> {
         })
     }
 
-    /// If the mixed numerics feature isn't enabled, then just parse everything numeric as a
-    /// floating point number and only emit floating point numeric tokens
-    #[cfg(not(feature = "mixed_numerics"))]
-    #[inline]
-    fn parse_numeric(&mut self, integral: bool) -> LexerResult<PackedToken> {
-        packed_token!(
-            Token::Float(fast_float::parse(self.input.buffer_as_byte_array()).unwrap()),
-            self.back_coords(),
-            self.front_coords()
-        )
-    }
-
-    /// If the mixed numeric feature is enabled, then we detect whether we have an integral or
+    /// We detect whether we have an integral or
     /// floating point value, and parse differently (and emit different tokens) for each
-    #[cfg(feature = "mixed_numerics")]
+    #[cfg(not(feature = "lazy-numerics"))]
     #[inline]
     fn parse_numeric(&mut self, integral: bool) -> LexerResult<PackedToken> {
         if integral {
@@ -601,6 +590,18 @@ impl<'a> Lexer<'a> {
                 self.front_coords()
             )
         }
+    }
+
+    #[cfg(feature = "lazy-numerics")]
+    #[inline]
+    fn parse_numeric(&mut self, integral: bool) -> LexerResult<PackedToken> {
+        packed_token!(
+            Token::LazyNumeric(LazyNumeric::new(
+                self.input.buffer_as_byte_array().as_slice()
+            )),
+            self.back_coords(),
+            self.front_coords()
+        )
     }
 
     /// Check that a numeric representation is prefixed correctly.
@@ -886,6 +887,13 @@ mod tests {
                     Token::Float(_) => {
                         assert_eq!(
                             token.0,
+                            Token::Float(fast_float::parse(l.replace(',', "")).unwrap())
+                        );
+                    }
+                    Token::LazyNumeric(lazy) => {
+                        let value: f64 = lazy.into();
+                        assert_eq!(
+                            Token::Float(value),
                             Token::Float(fast_float::parse(l.replace(',', "")).unwrap())
                         );
                     }
