@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2023-10-30
+
+### Documentation
+
+- Updated commit filters
+
+### Features
+
+- Addition of lazy numeric tokens and parser types
+- Addition of lazy numerics feature
+
 ## [1.0.10] - 2023-10-29
 
 ### Bug Fixes
@@ -13,6 +24,7 @@ All notable changes to this project will be documented in this file.
 
 ### Documentation
 
+- Updated changelog
 - Updated changelog
 - Comment change only
 - Minimal documentation about how the scanner works
@@ -52,12 +64,6 @@ All notable changes to this project will be documented in this file.
 - Streamlined scanner implementation
 - Changed literal string comparisons for null, false, true to byte array comparisons
 
-### Implementation
-
-- Inlining hints
-- Removed some unwanted constants, ensured that map_err was happening for boolean matches
-- Added inlining for most match functions
-
 ### Refactor
 
 - Moved list of invalid test specifications to separate specs module
@@ -82,18 +88,10 @@ All notable changes to this project will be documented in this file.
 
 - 5Mb stress tests added to benchmarks for DOM parser
 
-### Merge
-
-- Stale dev branch
-
 ### Opt
 
 - Use of copy/creation funcs
 - Inline mutation of values
-
-### Tmp
-
-- Relative crate references
 
 ## [1.0.8] - 2023-10-11
 
