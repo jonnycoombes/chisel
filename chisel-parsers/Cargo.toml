@@ -16,6 +16,10 @@ chisel-decoders = "1.0.8"
 chisel-json-pointer = "1.0.8"
 chisel-lexers = {path = "../chisel-lexers"} 
 
+[features]
+default=["chisel-lexers/default"]
+lazy-numerics=["chisel-lexers/lazy-numerics"]
+
 [dev-dependencies]
 bytesize = {workspace = true}
 criterion = {workspace = true, features = ["html_reports"]}
@@ -24,7 +28,6 @@ pprof = {workspace = true, features = ["flamegraph", "criterion", "protobuf"]}
 [[bench]]
 name = "dom_parsing"
 harness = false
-
 
 [[bench]]
 name = "sax_parsing"
