@@ -22,6 +22,7 @@ pub enum JsonPointerComponent<'a> {
     Index(usize),
 }
 
+/// Implementation of [Display] for [JsonPointerComponent]
 impl<'a> Display for JsonPointerComponent<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -43,7 +44,9 @@ pub struct JsonPointer<'a> {
     components: VecDeque<JsonPointerComponent<'a>>,
 }
 
+/// Implement equality for pointers
 impl<'a> PartialEq for JsonPointer<'a> {
+    /// Checks whether two pointers are equal
     fn eq(&self, other: &Self) -> bool {
         self.matches(other)
     }

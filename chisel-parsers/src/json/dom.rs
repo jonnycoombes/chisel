@@ -34,7 +34,7 @@ impl Parser {
         Self { encoding }
     }
 
-    ///
+    /// Parse a file
     pub fn parse_file<PathLike: AsRef<Path>>(&self, path: PathLike) -> ParserResult<JsonValue> {
         match File::open(&path) {
             Ok(f) => {
@@ -48,12 +48,14 @@ impl Parser {
         }
     }
 
+    /// Parse a byte slice
     pub fn parse_bytes(&self, bytes: &[u8]) -> ParserResult<JsonValue> {
         let mut reader = BufReader::new(bytes);
         let mut chars = default_decoder(&mut reader);
         self.parse(&mut chars)
     }
 
+    /// Parse a string slice
     pub fn parse_str(&self, str: &str) -> ParserResult<JsonValue> {
         let mut reader = BufReader::new(str.as_bytes());
         let mut chars = default_decoder(&mut reader);
@@ -77,6 +79,7 @@ impl Parser {
         }
     }
 
+    /// Parse a value, this is the main entry point for the parser
     #[inline]
     fn parse_value(&self, lexer: &mut Lexer) -> ParserResult<JsonValue> {
         match lexer.consume()? {
